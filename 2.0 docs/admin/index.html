@@ -24,7 +24,12 @@
     a.btn { flex:1; text-align:center; text-decoration:none; font-size:13px; font-weight:700;
             padding:10px; border-radius:8px; color:#fff; background:var(--accent); cursor:pointer; }
     a.btn.ghost { background:transparent; border:1px solid var(--line); color:var(--text); }
+    /* Al volver del login no se muestra la tarjeta: solo se guarda la sesión y se regresa al visor */
+    html.redirecting .card { visibility:hidden; }
   </style>
+  <script>
+    if (new URLSearchParams(location.search).get('login') === '1') document.documentElement.className = 'redirecting';
+  </script>
 </head>
 <body>
   <div class="card">
@@ -78,7 +83,7 @@
           who.textContent = L.signed + id.email;
         }
       })
-      .catch(function () { del('ace-admin'); who.textContent = L.none; });
+      .catch(function () { del('ace-admin'); who.textContent = L.none; document.documentElement.className = ''; });
   </script>
 </body>
 </html>
