@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,82 +8,794 @@
   <link rel="icon" type="image/png" href="../logo-inst3.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
-    :root { --bg:#0b1220; --card:#0f172a; --line:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --accent:#2563eb; --ok:#34d399; }
-    * { box-sizing: border-box; }
-    body { margin:0; min-height:100vh; background:var(--bg); color:var(--text);
-           font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-           display:flex; align-items:center; justify-content:center; padding:16px; }
-    .card { width:100%; max-width:440px; background:var(--card); border:1px solid var(--line);
-            border-radius:14px; padding:28px; box-shadow:0 20px 40px -10px rgba(0,0,0,.5); }
-    h1 { font-size:18px; margin:0 0 4px; }
-    p { color:var(--muted); font-size:13px; line-height:1.5; margin:0 0 18px; }
-    .user { display:flex; align-items:center; gap:10px; background:#0b1220; border:1px solid var(--line);
-            border-radius:10px; padding:12px; font-size:13px; margin-bottom:18px; }
-    .user i { color:var(--ok); }
-    .row { display:flex; gap:10px; }
-    a.btn { flex:1; text-align:center; text-decoration:none; font-size:13px; font-weight:700;
-            padding:10px; border-radius:8px; color:#fff; background:var(--accent); cursor:pointer; }
-    a.btn.ghost { background:transparent; border:1px solid var(--line); color:var(--text); }
-    /* Al volver del login no se muestra la tarjeta: solo se guarda la sesión y se regresa al visor */
-    html.redirecting .card { visibility:hidden; }
+    :root, html[data-theme="dark"] {
+      --bg:#0b1220; --panel:#0f172a; --panel2:#111c33; --line:#1e293b; --line2:#334155;
+      --text:#e2e8f0; --strong:#f8fafc; --muted:#94a3b8; --faint:#64748b;
+      --blue:#3b82f6; --blue-bg:rgba(59,130,246,.14); --green:#34d399; --green-bg:rgba(16,185,129,.14);
+      --amber:#fbbf24; --amber-bg:rgba(245,158,11,.14); --rose:#fb7185; --rose-bg:rgba(244,63,94,.14);
+      --violet:#a78bfa; --violet-bg:rgba(139,92,246,.14); --sky:#38bdf8; --sky-bg:rgba(14,165,233,.14);
+      --code:#6ee7b7; --shadow:0 20px 40px -18px rgba(0,0,0,.6);
+    }
+    html[data-theme="light"] {
+      --bg:#f1f5f9; --panel:#ffffff; --panel2:#f8fafc; --line:#e2e8f0; --line2:#cbd5e1;
+      --text:#1e293b; --strong:#0f172a; --muted:#475569; --faint:#64748b;
+      --blue:#2563eb; --blue-bg:rgba(37,99,235,.09); --green:#047857; --green-bg:rgba(4,120,87,.09);
+      --amber:#b45309; --amber-bg:rgba(180,83,9,.09); --rose:#be123c; --rose-bg:rgba(190,18,60,.08);
+      --violet:#6d28d9; --violet-bg:rgba(109,40,217,.08); --sky:#0369a1; --sky-bg:rgba(3,105,161,.08);
+      --code:#065f46; --shadow:0 16px 30px -20px rgba(15,23,42,.35);
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:13px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+    a { color:inherit; }
+    button, select, input, textarea { font:inherit; color:inherit; }
+    .mono { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+    html.redirecting body > * { visibility:hidden; }
+
+    /* Encabezado */
+    header { position:sticky; top:0; z-index:20; background:var(--panel); border-bottom:1px solid var(--line); }
+    .bar { max-width:1400px; margin:0 auto; padding:10px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .brand { display:flex; align-items:center; gap:10px; min-width:0; flex:1; }
+    .brand img { height:26px; }
+    .brand b { color:var(--strong); font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .brand small { color:var(--muted); display:block; font-size:11px; }
+    .tools { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .chip { display:inline-flex; align-items:center; gap:6px; padding:5px 9px; border:1px solid var(--line2); border-radius:8px; background:var(--panel2); font-size:12px; white-space:nowrap; text-decoration:none; cursor:pointer; }
+    .chip:hover { border-color:var(--blue); }
+    .chip.user i { color:var(--green); }
+    .chip.out { color:var(--rose); }
+    select.chip { padding:5px 6px; }
+    .proto { background:var(--amber-bg); color:var(--amber); border:1px solid color-mix(in srgb, var(--amber) 40%, transparent); padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap; }
+
+    /* Pestañas */
+    nav { max-width:1400px; margin:0 auto; padding:0 16px; display:flex; gap:4px; overflow-x:auto; }
+    nav button { background:none; border:0; border-bottom:2px solid transparent; padding:9px 12px; color:var(--muted); cursor:pointer; white-space:nowrap; font-weight:600; }
+    nav button.on { color:var(--strong); border-color:var(--blue); }
+    nav .count { background:var(--rose-bg); color:var(--rose); border-radius:999px; padding:0 6px; font-size:11px; margin-left:4px; }
+
+    main { max-width:1400px; margin:0 auto; padding:16px; }
+    .notice { display:flex; gap:10px; align-items:flex-start; background:var(--amber-bg); border:1px solid color-mix(in srgb, var(--amber) 35%, transparent); color:var(--text); padding:10px 12px; border-radius:10px; margin-bottom:16px; font-size:12px; }
+    .notice i { color:var(--amber); margin-top:2px; }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px; box-shadow:var(--shadow); }
+    .card h3 { margin:0 0 10px; font-size:13px; color:var(--strong); display:flex; align-items:center; gap:8px; }
+    .grid { display:grid; gap:14px; }
+    .kpis { grid-template-columns:repeat(4, minmax(0,1fr)); }
+    .two { grid-template-columns:1fr 1fr; }
+    .kpi .v { font-size:26px; font-weight:800; color:var(--strong); line-height:1.1; }
+    .kpi .l { color:var(--muted); font-size:12px; }
+    .kpi .s { color:var(--faint); font-size:11px; }
+    .muted { color:var(--muted); } .faint { color:var(--faint); }
+    .hidden { display:none !important; }
+
+    /* Diagrama del flujo */
+    .flow { display:flex; align-items:stretch; gap:6px; overflow-x:auto; padding:4px 2px 8px; }
+    .node { flex:1 0 128px; border:1px solid var(--line2); border-radius:10px; padding:10px; background:var(--panel2); text-align:center; font-size:12px; }
+    .node i { font-size:16px; display:block; margin-bottom:4px; }
+    .node b { display:block; color:var(--strong); font-size:12px; }
+    .node.hitl { border:2px solid var(--green); background:var(--green-bg); }
+    .arrow { align-self:center; color:var(--faint); flex:0 0 auto; }
+    .loop { margin-top:6px; font-size:12px; color:var(--muted); display:flex; gap:8px; align-items:center; }
+
+    .bars .row { display:grid; grid-template-columns:150px 1fr 34px; gap:8px; align-items:center; margin:6px 0; font-size:12px; }
+    .bars .track { height:8px; background:var(--panel2); border:1px solid var(--line); border-radius:99px; overflow:hidden; }
+    .bars .fill { height:100%; background:var(--blue); border-radius:99px; }
+
+    /* Cola de revisión */
+    .queue { grid-template-columns:360px minmax(0,1fr); align-items:start; }
+    .filters { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+    .filters button { border:1px solid var(--line2); background:var(--panel2); border-radius:999px; padding:3px 10px; cursor:pointer; font-size:12px; color:var(--muted); }
+    .filters button.on { border-color:var(--blue); color:var(--strong); background:var(--blue-bg); }
+    .list { display:flex; flex-direction:column; gap:8px; max-height:calc(100vh - 250px); overflow:auto; padding-right:2px; }
+    .item { border:1px solid var(--line); border-radius:10px; padding:10px; background:var(--panel2); cursor:pointer; text-align:left; width:100%; }
+    .item:hover { border-color:var(--line2); }
+    .item.sel { border-color:var(--blue); box-shadow:0 0 0 1px var(--blue) inset; }
+    .item .q { color:var(--strong); font-weight:600; font-size:12.5px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .item .m { color:var(--faint); font-size:11px; margin-top:4px; display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+    .badge { display:inline-flex; align-items:center; gap:4px; border-radius:999px; padding:1px 8px; font-size:11px; font-weight:700; white-space:nowrap; }
+    .b-pending { background:var(--amber-bg); color:var(--amber); }
+    .b-approved { background:var(--green-bg); color:var(--green); }
+    .b-corrected { background:var(--blue-bg); color:var(--blue); }
+    .b-rejected { background:var(--rose-bg); color:var(--rose); }
+    .b-live { background:var(--violet-bg); color:var(--violet); }
+    .b-flag { background:var(--rose-bg); color:var(--rose); }
+
+    .detail .head { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap; margin-bottom:12px; }
+    .detail .head .q { font-size:15px; font-weight:700; color:var(--strong); }
+    .steps { display:flex; flex-direction:column; gap:10px; }
+    .step { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+    .step > .t { display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--panel2); border-bottom:1px solid var(--line); font-weight:700; color:var(--strong); font-size:12.5px; }
+    .step > .t .n { width:20px; height:20px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:11px; }
+    .step > .c { padding:10px; }
+    .s1 .n { background:var(--sky-bg); color:var(--sky); } .s2 .n { background:var(--amber-bg); color:var(--amber); }
+    .s3 .n { background:var(--green-bg); color:var(--green); } .s4 .n { background:var(--violet-bg); color:var(--violet); }
+    .kv { display:grid; grid-template-columns:repeat(auto-fill, minmax(170px,1fr)); gap:6px 14px; font-size:12px; }
+    .kv > div > span:first-child { color:var(--faint); display:block; font-size:11px; }
+    pre { margin:6px 0 0; padding:8px; background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--code); font-size:11px; max-height:170px; overflow:auto; }
+    table { width:100%; border-collapse:collapse; font-size:12px; }
+    th { text-align:left; color:var(--faint); font-size:11px; text-transform:uppercase; letter-spacing:.03em; padding:5px 6px; border-bottom:1px solid var(--line2); }
+    td { padding:5px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+    td.num, th.num { text-align:right; font-family:ui-monospace,Menlo,Consolas,monospace; }
+    .up { color:var(--rose); } .down { color:var(--green); }
+    .answer { background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px; }
+    .answer.old { text-decoration:line-through; opacity:.6; }
+    .btn { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line2); background:var(--panel2); border-radius:8px; padding:6px 12px; cursor:pointer; font-weight:600; text-decoration:none; font-size:12.5px; }
+    .btn:hover { border-color:var(--blue); }
+    .btn.primary { background:var(--blue); border-color:var(--blue); color:#fff; }
+    .btn.green { background:#059669; border-color:#059669; color:#fff; }
+    .stars { color:var(--amber); letter-spacing:1px; }
+    .stars .off { color:var(--line2); }
+
+    /* Panel de revisión humana */
+    .review { margin-top:12px; border:2px solid var(--green); border-radius:12px; padding:12px; background:var(--green-bg); }
+    .review h4 { margin:0 0 8px; color:var(--strong); font-size:13px; display:flex; gap:8px; align-items:center; }
+    .decisions { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+    .decisions label { display:flex; align-items:center; gap:6px; border:1px solid var(--line2); background:var(--panel); padding:6px 10px; border-radius:8px; cursor:pointer; font-weight:600; }
+    .decisions input { accent-color:var(--blue); }
+    .cats { display:flex; gap:6px 12px; flex-wrap:wrap; margin:6px 0 10px; font-size:12px; }
+    .cats label { display:flex; gap:5px; align-items:center; cursor:pointer; }
+    textarea, input[type=text] { width:100%; background:var(--panel); border:1px solid var(--line2); border-radius:8px; padding:7px 9px; resize:vertical; }
+    textarea:focus, input:focus, select:focus { outline:2px solid color-mix(in srgb, var(--blue) 50%, transparent); outline-offset:0; }
+    .field { margin-bottom:8px; } .field > span { display:block; font-size:11px; color:var(--muted); margin-bottom:3px; font-weight:600; }
+    .done { border:1px solid var(--line2); border-radius:10px; padding:10px; background:var(--panel2); margin-top:12px; font-size:12px; }
+
+    .modes { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .mode { border:1px solid var(--line2); border-radius:10px; padding:12px; cursor:pointer; background:var(--panel2); display:block; }
+    .mode.on { border:2px solid var(--blue); background:var(--blue-bg); }
+    .mode b { color:var(--strong); display:flex; gap:8px; align-items:center; }
+    .mode input { accent-color:var(--blue); }
+    .empty { text-align:center; color:var(--faint); padding:30px 10px; }
+    .toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--panel); border:1px solid var(--green); color:var(--text); padding:9px 14px; border-radius:10px; box-shadow:var(--shadow); z-index:50; font-size:12.5px; }
+
+    @media (max-width:1000px) { .queue, .two { grid-template-columns:1fr; } .list { max-height:none; } .kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:560px) { .modes { grid-template-columns:1fr; } .bars .row { grid-template-columns:110px 1fr 30px; } .brand small { display:none; } }
   </style>
   <script>
+    // Al volver del login no se muestra la página: solo se guarda la sesión y se regresa al visor
     if (new URLSearchParams(location.search).get('login') === '1') document.documentElement.className = 'redirecting';
+    try { if (localStorage.getItem('ace-theme') === 'light') document.documentElement.dataset.theme = 'light'; } catch (e) {}
   </script>
 </head>
 <body>
-  <div class="card">
-    <h1><i class="fas fa-shield-halved"></i> <span id="t-title">Administration</span></h1>
-    <p id="t-sub">Restricted area for SEI administrators and staff.</p>
-    <div class="user"><i class="fas fa-circle-check"></i> <span id="who">Checking session…</span></div>
-    <div class="row">
-      <a class="btn ghost" href="/"><i class="fas fa-map"></i> <span id="t-back">Back to explorer</span></a>
-      <a class="btn" id="signout"><i class="fas fa-right-from-bracket"></i> <span id="t-out">Sign out</span></a>
+  <header>
+    <div class="bar">
+      <div class="brand">
+        <img src="../logo-inst1.png" alt="SEI">
+        <div style="min-width:0"><b>AI Climate Risk Portfolio Explorer</b><small data-t="adminTitle"></small></div>
+        <span class="proto" data-t="proto"></span>
+      </div>
+      <div class="tools">
+        <select id="lang" class="chip" aria-label="Language"><option value="en">🇺🇸 EN</option><option value="es">🇲🇽 ES</option><option value="pt">🇧🇷 PT</option></select>
+        <button id="theme" class="chip" aria-label="Theme"><i class="fa-solid fa-moon"></i></button>
+        <span class="chip user"><i class="fa-solid fa-user-check"></i> <span id="who" class="mono">…</span></span>
+        <a class="chip" href="/"><i class="fa-solid fa-map"></i> <span data-t="back"></span></a>
+        <a class="chip out" id="signout" href="#"><i class="fa-solid fa-right-from-bracket"></i> <span data-t="signout"></span></a>
+      </div>
     </div>
-  </div>
+    <nav id="tabs">
+      <button data-tab="overview" class="on"><i class="fa-solid fa-gauge"></i> <span data-t="tOverview"></span></button>
+      <button data-tab="queue"><i class="fa-solid fa-list-check"></i> <span data-t="tQueue"></span><span class="count" id="pendingCount">0</span></button>
+      <button data-tab="feedback"><i class="fa-solid fa-star"></i> <span data-t="tFeedback"></span></button>
+      <button data-tab="audit"><i class="fa-solid fa-clock-rotate-left"></i> <span data-t="tAudit"></span></button>
+      <button data-tab="settings"><i class="fa-solid fa-sliders"></i> <span data-t="tSettings"></span></button>
+    </nav>
+  </header>
+
+  <main>
+    <div class="notice"><i class="fa-solid fa-flask"></i><div data-t="notice"></div></div>
+
+    <!-- RESUMEN -->
+    <section id="v-overview" class="grid" style="gap:14px">
+      <div class="grid kpis" id="kpis"></div>
+      <div class="card">
+        <h3><i class="fa-solid fa-diagram-project" style="color:var(--green)"></i> <span data-t="howTitle"></span> · <span id="modeName" class="muted" style="font-weight:600"></span></h3>
+        <div class="flow" id="flow"></div>
+        <div class="loop"><i class="fa-solid fa-arrows-rotate" style="color:var(--green)"></i><span id="flowNote"></span></div>
+      </div>
+      <div class="grid two">
+        <div class="card bars"><h3><i class="fa-solid fa-tags" style="color:var(--blue)"></i> <span data-t="catsTitle"></span></h3><div id="catBars"></div><p class="faint" style="margin:8px 0 0;font-size:11.5px" data-t="catsHelp"></p></div>
+        <div class="card bars"><h3><i class="fa-solid fa-star" style="color:var(--amber)"></i> <span data-t="ratingTitle"></span></h3><div id="ratingBars"></div></div>
+      </div>
+    </section>
+
+    <!-- COLA DE REVISIÓN -->
+    <section id="v-queue" class="hidden">
+      <div class="grid queue">
+        <div class="card">
+          <div class="filters" id="filters"></div>
+          <div class="list" id="list"></div>
+        </div>
+        <div class="card detail" id="detail"></div>
+      </div>
+    </section>
+
+    <!-- OPINIONES -->
+    <section id="v-feedback" class="hidden grid" style="gap:14px">
+      <div class="grid kpis" id="fbKpis"></div>
+      <div class="card"><h3><i class="fa-solid fa-comments" style="color:var(--violet)"></i> <span data-t="fbTitle"></span></h3><div style="overflow-x:auto"><table id="fbTable"></table></div></div>
+    </section>
+
+    <!-- REGISTRO -->
+    <section id="v-audit" class="hidden">
+      <div class="card"><h3><i class="fa-solid fa-clock-rotate-left" style="color:var(--sky)"></i> <span data-t="auditTitle"></span></h3><p class="muted" style="margin:0 0 10px" data-t="auditHelp"></p><div style="overflow-x:auto"><table id="auditTable"></table></div></div>
+    </section>
+
+    <!-- AJUSTES -->
+    <section id="v-settings" class="hidden grid" style="gap:14px">
+      <div class="card">
+        <h3><i class="fa-solid fa-user-shield" style="color:var(--green)"></i> <span data-t="modeTitle"></span></h3>
+        <div class="modes" id="modes"></div>
+      </div>
+      <div class="grid two">
+        <div class="card">
+          <h3><i class="fa-solid fa-users" style="color:var(--blue)"></i> <span data-t="revTitle"></span></h3>
+          <table><tbody id="reviewers"></tbody></table>
+          <p class="faint" style="margin:10px 0 0;font-size:11.5px" data-t="revHelp"></p>
+        </div>
+        <div class="card">
+          <h3><i class="fa-solid fa-shield-halved" style="color:var(--violet)"></i> <span data-t="privTitle"></span></h3>
+          <p class="muted" style="margin:0 0 12px" data-t="privText"></p>
+          <button class="btn" id="reset"><i class="fa-solid fa-rotate-left"></i> <span data-t="reset"></span></button>
+        </div>
+      </div>
+    </section>
+  </main>
+
   <script>
-    // Textos en el idioma elegido en el visor (misma clave 'ace-lang')
-    var TXT = {
-      en: { title: 'Administration', sub: 'Restricted area for SEI administrators and staff.', back: 'Back to explorer', out: 'Sign out',
-            checking: 'Checking session…', signed: 'Signed in as ', none: 'No active session', redirect: 'Signed in. Returning to the explorer…' },
-      es: { title: 'Administración', sub: 'Área restringida para administradores y personal de SEI.', back: 'Volver al visor', out: 'Cerrar sesión',
-            checking: 'Verificando sesión…', signed: 'Sesión iniciada como ', none: 'Sin sesión activa', redirect: 'Sesión iniciada. Volviendo al visor…' },
-      pt: { title: 'Administração', sub: 'Área restrita para administradores e equipe do SEI.', back: 'Voltar ao visualizador', out: 'Sair',
-            checking: 'Verificando sessão…', signed: 'Conectado como ', none: 'Nenhuma sessão ativa', redirect: 'Sessão iniciada. Voltando ao visualizador…' }
+  // =======================================================================
+  // ADMINISTRACIÓN Y HUMAN-IN-THE-LOOP · PROTOTIPO
+  // Datos de ejemplo + consultas reales hechas en el visor de este navegador
+  // ('ace-hitl-runs'). Las decisiones se guardan solo en este navegador.
+  // =======================================================================
+  var T = {
+    en: {
+      adminTitle:'Administration · Human-in-the-loop', proto:'PROTOTYPE', back:'Back to explorer', signout:'Sign out',
+      tOverview:'Overview', tQueue:'Review queue', tFeedback:'User feedback', tAudit:'Audit log', tSettings:'Settings',
+      notice:'<b>Prototype with sample data.</b> This page shows how SEI specialists will review the work of the AI agents. Questions you complete in the explorer\'s AI Agent panel from this browser also appear in the review queue (marked <b>Live</b>). Decisions are stored only in this browser.',
+      kQueries:'Agent workflows', kQueriesS:'questions answered by the 4 agents', kPending:'Pending review', kPendingS:'{n} flagged automatically',
+      kApproval:'Approved without changes', kApprovalS:'of reviewed answers', kRating:'Average user rating', kRatingS:'{n} survey responses',
+      howTitle:'How the human-in-the-loop works', mPost:'Post-review', mPre:'Pre-approval',
+      nUser:'User question', nUserS:'Explorer · AI Agent panel', n1:'1. Selection', n1s:'variable, scenario, assets', n2:'2. Risk assessment', n2s:'validation + JSON + RAG',
+      n3:'3. Response & report', n3s:'answer + PDF', n4:'4. Delivery & feedback', n4s:'email/download + survey', nH:'SEI review', nHs:'approve · correct · reject',
+      notePost:'Post-review: the user gets the answer right away; SEI specialists review it afterwards (flagged cases first) and their corrections improve the agents\' instructions and knowledge base.',
+      notePre:'Pre-approval: answers wait in the queue and are delivered only after an SEI specialist approves or corrects them.',
+      catsTitle:'What reviewers corrected', catsHelp:'Each correction is classified so the team can see where the agents fail and what to improve.',
+      ratingTitle:'User satisfaction (survey)',
+      c_data:'Incorrect data', c_interp:'Misinterpretation', c_caveat:'Missing caveat', c_scope:'Out of scope', c_lang:'Tone / language',
+      fAll:'All', fPending:'Pending', fFlagged:'Flagged', fReviewed:'Reviewed', emptyList:'No items in this filter.', pickItem:'Select an item to review it.',
+      s_pending:'Pending review', s_pendingPre:'Awaiting approval · not delivered', s_approved:'Approved', s_corrected:'Corrected', s_rejected:'Rejected', live:'Live',
+      fl_rating:'Low rating', fl_useful:'Not useful', fl_outside:'Outside coverage',
+      qid:'Query ID', date:'Date', lang:'Language', user:'User', userAnon:'Pseudonymised',
+      a1:'Climate Selection and Analysis Agent', a2:'Risk Assessment Agent', a3:'Response and Reporting Agent', a4:'Delivery and Feedback Agent',
+      variable:'Variable', scenario:'Scenario', horizons:'Horizons', assets:'Assets', warming:'Global warming',
+      validated:'Assets validated', outside:'Outside data coverage', worsening:'Assets with increasing risk', consistency:'Consistency with query panel', ok:'OK',
+      payload:'Machine-readable payload sent to the RAG and LLM', rag:'Context retrieved from the knowledge base (simulated)',
+      rag1:'CIE v2 indicator documentation', rag2:'IPCC AR6 WGI, Chapter 11: weather and climate extremes', rag3:'Portfolio climate-risk screening guidelines',
+      answer:'Answer generated by the LLM', ranking:'Ranking of locations', asset:'Asset', preview:'Preview PDF report',
+      channel:'Delivery', ch_email:'Email', ch_download:'Download', ch_none:'Not delivered yet', survey:'Survey', useful:'Useful', yes:'Yes', no:'No', comment:'Comment', noSurvey:'The user did not answer the survey.',
+      revTitleH:'SEI specialist review', decision:'Decision', d_approve:'Approve', d_approvePre:'Approve and deliver', d_correct:'Correct', d_reject:'Reject',
+      cats:'What was wrong?', corrected:'Corrected answer (sent to the user and used to improve the agents)', note:'Reviewer note', notePh:'Why? This note is saved in the audit log.',
+      save:'Save review', needCat:'Select at least one category.', needNote:'Please add a short note.', saved:'Review saved and recorded in the audit log.',
+      reviewedBy:'Reviewed by {u} · {d}', original:'Original answer', fbTitle:'Survey responses',
+      fbAvg:'Average rating', fbUseful:'Found it useful', fbResp:'Responses', fbLow:'Low ratings (1–2)', fbNone:'No survey responses yet.', query:'Question', rating:'Rating',
+      auditTitle:'Audit log', auditHelp:'Every review decision is recorded with the reviewer\'s SEI account (from Cloudflare Access) and the time.',
+      when:'When', reviewer:'Reviewer', action:'Action', item:'Question', auditEmpty:'No review decisions yet.',
+      modeTitle:'Review mode', modePostT:'Post-review (current)', modePostD:'Users receive answers immediately. SEI reviews afterwards, starting with flagged cases (low rating, "not useful", assets outside data coverage).',
+      modePreT:'Pre-approval (next phase)', modePreD:'Answers are held in the queue and delivered only after an SEI specialist approves or corrects them. More rigorous, but users wait.',
+      revTitle:'Reviewers', revYou:'you', revRole:'SEI reviewer', revHelp:'Access is limited to @sei.org accounts by Cloudflare Access. A smaller reviewer group can be defined there without changing code.',
+      privTitle:'Data and privacy', privText:'Users are pseudonymised and delivery emails are masked. In the production version, data will be stored in SEI\'s Cloudflare account with a retention period. In this prototype everything stays in this browser.',
+      reset:'Reset demo data', resetOk:'Demo data restored.', modeSaved:'Review mode updated.',
+      rTitle:'Climate risk summary report', rStamp:'SEI human review', rPending:'Pending SEI review', rQuestion:'Question', rAnswer:'Answer', rData:'Data used', rSource:'Source', rPrint:'Save as PDF / Print',
+      rNote:'Produced by a demonstration of the AI agent workflow. Values are changes relative to the CIE reference period at ~55 km resolution and describe climate hazard, not financial losses.',
+      noSession:'No active session', redirect:'Signed in. Returning to the explorer…'
+    },
+    es: {
+      adminTitle:'Administración · Human-in-the-loop', proto:'PROTOTIPO', back:'Volver al visor', signout:'Cerrar sesión',
+      tOverview:'Resumen', tQueue:'Cola de revisión', tFeedback:'Opiniones de usuarios', tAudit:'Registro', tSettings:'Ajustes',
+      notice:'<b>Prototipo con datos de ejemplo.</b> Esta página muestra cómo los especialistas de SEI revisarán el trabajo de los agentes de IA. Las preguntas que complete en el panel de agentes del visor desde este navegador también aparecen en la cola (marcadas <b>En vivo</b>). Las decisiones se guardan solo en este navegador.',
+      kQueries:'Flujos de agentes', kQueriesS:'preguntas respondidas por los 4 agentes', kPending:'Pendientes de revisión', kPendingS:'{n} marcadas automáticamente',
+      kApproval:'Aprobadas sin cambios', kApprovalS:'de las respuestas revisadas', kRating:'Calificación promedio', kRatingS:'{n} respuestas a la encuesta',
+      howTitle:'Cómo funciona el human-in-the-loop', mPost:'Revisión posterior', mPre:'Aprobación previa',
+      nUser:'Pregunta del usuario', nUserS:'Visor · panel de agentes', n1:'1. Selección', n1s:'variable, escenario, activos', n2:'2. Evaluación de riesgo', n2s:'validación + JSON + RAG',
+      n3:'3. Respuesta y reporte', n3s:'respuesta + PDF', n4:'4. Entrega y opinión', n4s:'correo/descarga + encuesta', nH:'Revisión SEI', nHs:'aprobar · corregir · rechazar',
+      notePost:'Revisión posterior: el usuario recibe la respuesta de inmediato; los especialistas de SEI la revisan después (primero los casos marcados) y sus correcciones mejoran las instrucciones y la base de conocimiento de los agentes.',
+      notePre:'Aprobación previa: las respuestas esperan en la cola y solo se entregan cuando un especialista de SEI las aprueba o corrige.',
+      catsTitle:'Qué corrigieron los revisores', catsHelp:'Cada corrección se clasifica para que el equipo vea en qué fallan los agentes y qué mejorar.',
+      ratingTitle:'Satisfacción de los usuarios (encuesta)',
+      c_data:'Dato incorrecto', c_interp:'Mala interpretación', c_caveat:'Falta una advertencia', c_scope:'Fuera de alcance', c_lang:'Tono / idioma',
+      fAll:'Todas', fPending:'Pendientes', fFlagged:'Marcadas', fReviewed:'Revisadas', emptyList:'No hay elementos en este filtro.', pickItem:'Seleccione un elemento para revisarlo.',
+      s_pending:'Pendiente', s_pendingPre:'Esperando aprobación · no entregada', s_approved:'Aprobada', s_corrected:'Corregida', s_rejected:'Rechazada', live:'En vivo',
+      fl_rating:'Calificación baja', fl_useful:'No fue útil', fl_outside:'Fuera de cobertura',
+      qid:'ID de consulta', date:'Fecha', lang:'Idioma', user:'Usuario', userAnon:'Seudonimizado',
+      a1:'Agente de selección y análisis climático', a2:'Agente de evaluación de riesgo', a3:'Agente de respuesta y reportes', a4:'Agente de entrega y retroalimentación',
+      variable:'Variable', scenario:'Escenario', horizons:'Horizontes', assets:'Activos', warming:'Calentamiento global',
+      validated:'Activos validados', outside:'Fuera de la cobertura de datos', worsening:'Activos con riesgo creciente', consistency:'Coherencia con el panel de consulta', ok:'OK',
+      payload:'Datos legibles por máquina enviados al RAG y al LLM', rag:'Contexto recuperado de la base de conocimiento (simulado)',
+      rag1:'Documentación de indicadores de CIE v2', rag2:'IPCC AR6 GTI, capítulo 11: extremos meteorológicos y climáticos', rag3:'Guías de tamizaje de riesgo climático de portafolios',
+      answer:'Respuesta generada por el LLM', ranking:'Ranking de ubicaciones', asset:'Activo', preview:'Ver reporte PDF',
+      channel:'Entrega', ch_email:'Correo', ch_download:'Descarga', ch_none:'Aún no entregada', survey:'Encuesta', useful:'Útil', yes:'Sí', no:'No', comment:'Comentario', noSurvey:'El usuario no respondió la encuesta.',
+      revTitleH:'Revisión del especialista de SEI', decision:'Decisión', d_approve:'Aprobar', d_approvePre:'Aprobar y entregar', d_correct:'Corregir', d_reject:'Rechazar',
+      cats:'¿Qué estuvo mal?', corrected:'Respuesta corregida (se envía al usuario y sirve para mejorar los agentes)', note:'Nota del revisor', notePh:'¿Por qué? Esta nota queda en el registro.',
+      save:'Guardar revisión', needCat:'Seleccione al menos una categoría.', needNote:'Agregue una nota breve.', saved:'Revisión guardada y registrada.',
+      reviewedBy:'Revisada por {u} · {d}', original:'Respuesta original', fbTitle:'Respuestas a la encuesta',
+      fbAvg:'Calificación promedio', fbUseful:'Les fue útil', fbResp:'Respuestas', fbLow:'Calificaciones bajas (1–2)', fbNone:'Aún no hay respuestas a la encuesta.', query:'Pregunta', rating:'Calificación',
+      auditTitle:'Registro de auditoría', auditHelp:'Cada decisión de revisión queda registrada con la cuenta de SEI del revisor (de Cloudflare Access) y la hora.',
+      when:'Cuándo', reviewer:'Revisor', action:'Acción', item:'Pregunta', auditEmpty:'Aún no hay decisiones de revisión.',
+      modeTitle:'Modo de revisión', modePostT:'Revisión posterior (actual)', modePostD:'Los usuarios reciben la respuesta de inmediato. SEI revisa después, empezando por los casos marcados (calificación baja, "no fue útil", activos fuera de la cobertura de datos).',
+      modePreT:'Aprobación previa (siguiente fase)', modePreD:'Las respuestas quedan en la cola y solo se entregan cuando un especialista de SEI las aprueba o corrige. Más riguroso, pero el usuario espera.',
+      revTitle:'Revisores', revYou:'usted', revRole:'Revisor SEI', revHelp:'Cloudflare Access limita el acceso a cuentas @sei.org. Ahí mismo se puede definir un grupo más pequeño de revisores sin cambiar código.',
+      privTitle:'Datos y privacidad', privText:'Los usuarios se seudonimizan y los correos de entrega se enmascaran. En la versión de producción los datos se guardarán en la cuenta de Cloudflare de SEI con un plazo de conservación. En este prototipo todo queda en este navegador.',
+      reset:'Restablecer datos de ejemplo', resetOk:'Datos de ejemplo restablecidos.', modeSaved:'Modo de revisión actualizado.',
+      rTitle:'Reporte resumen de riesgo climático', rStamp:'Revisión humana de SEI', rPending:'Pendiente de revisión de SEI', rQuestion:'Pregunta', rAnswer:'Respuesta', rData:'Datos usados', rSource:'Fuente', rPrint:'Guardar como PDF / Imprimir',
+      rNote:'Generado por una demostración del flujo de agentes de IA. Los valores son cambios frente al periodo de referencia de CIE a ~55 km de resolución y describen la amenaza climática, no pérdidas financieras.',
+      noSession:'Sin sesión activa', redirect:'Sesión iniciada. Volviendo al visor…'
+    },
+    pt: {
+      adminTitle:'Administração · Human-in-the-loop', proto:'PROTÓTIPO', back:'Voltar ao visualizador', signout:'Sair',
+      tOverview:'Resumo', tQueue:'Fila de revisão', tFeedback:'Opiniões dos usuários', tAudit:'Registro', tSettings:'Configurações',
+      notice:'<b>Protótipo com dados de exemplo.</b> Esta página mostra como os especialistas do SEI revisarão o trabalho dos agentes de IA. As perguntas concluídas no painel de agentes do visualizador neste navegador também aparecem na fila (marcadas <b>Ao vivo</b>). As decisões ficam salvas apenas neste navegador.',
+      kQueries:'Fluxos de agentes', kQueriesS:'perguntas respondidas pelos 4 agentes', kPending:'Pendentes de revisão', kPendingS:'{n} sinalizadas automaticamente',
+      kApproval:'Aprovadas sem alterações', kApprovalS:'das respostas revisadas', kRating:'Nota média', kRatingS:'{n} respostas à pesquisa',
+      howTitle:'Como funciona o human-in-the-loop', mPost:'Revisão posterior', mPre:'Aprovação prévia',
+      nUser:'Pergunta do usuário', nUserS:'Visualizador · painel de agentes', n1:'1. Seleção', n1s:'variável, cenário, ativos', n2:'2. Avaliação de risco', n2s:'validação + JSON + RAG',
+      n3:'3. Resposta e relatório', n3s:'resposta + PDF', n4:'4. Entrega e opinião', n4s:'e-mail/download + pesquisa', nH:'Revisão SEI', nHs:'aprovar · corrigir · rejeitar',
+      notePost:'Revisão posterior: o usuário recebe a resposta na hora; os especialistas do SEI a revisam depois (primeiro os casos sinalizados) e suas correções melhoram as instruções e a base de conhecimento dos agentes.',
+      notePre:'Aprovação prévia: as respostas aguardam na fila e só são entregues depois que um especialista do SEI as aprova ou corrige.',
+      catsTitle:'O que os revisores corrigiram', catsHelp:'Cada correção é classificada para que a equipe veja onde os agentes falham e o que melhorar.',
+      ratingTitle:'Satisfação dos usuários (pesquisa)',
+      c_data:'Dado incorreto', c_interp:'Interpretação errada', c_caveat:'Falta uma ressalva', c_scope:'Fora do escopo', c_lang:'Tom / idioma',
+      fAll:'Todas', fPending:'Pendentes', fFlagged:'Sinalizadas', fReviewed:'Revisadas', emptyList:'Não há itens neste filtro.', pickItem:'Selecione um item para revisá-lo.',
+      s_pending:'Pendente', s_pendingPre:'Aguardando aprovação · não entregue', s_approved:'Aprovada', s_corrected:'Corrigida', s_rejected:'Rejeitada', live:'Ao vivo',
+      fl_rating:'Nota baixa', fl_useful:'Não foi útil', fl_outside:'Fora da cobertura',
+      qid:'ID da consulta', date:'Data', lang:'Idioma', user:'Usuário', userAnon:'Pseudonimizado',
+      a1:'Agente de seleção e análise climática', a2:'Agente de avaliação de risco', a3:'Agente de resposta e relatórios', a4:'Agente de entrega e feedback',
+      variable:'Variável', scenario:'Cenário', horizons:'Horizontes', assets:'Ativos', warming:'Aquecimento global',
+      validated:'Ativos validados', outside:'Fora da cobertura de dados', worsening:'Ativos com risco crescente', consistency:'Coerência com o painel de consulta', ok:'OK',
+      payload:'Dados legíveis por máquina enviados ao RAG e ao LLM', rag:'Contexto recuperado da base de conhecimento (simulado)',
+      rag1:'Documentação dos indicadores do CIE v2', rag2:'IPCC AR6 GT I, capítulo 11: extremos meteorológicos e climáticos', rag3:'Diretrizes de triagem de risco climático de portfólios',
+      answer:'Resposta gerada pelo LLM', ranking:'Ranking de localidades', asset:'Ativo', preview:'Ver relatório PDF',
+      channel:'Entrega', ch_email:'E-mail', ch_download:'Download', ch_none:'Ainda não entregue', survey:'Pesquisa', useful:'Útil', yes:'Sim', no:'Não', comment:'Comentário', noSurvey:'O usuário não respondeu à pesquisa.',
+      revTitleH:'Revisão do especialista do SEI', decision:'Decisão', d_approve:'Aprovar', d_approvePre:'Aprovar e entregar', d_correct:'Corrigir', d_reject:'Rejeitar',
+      cats:'O que estava errado?', corrected:'Resposta corrigida (enviada ao usuário e usada para melhorar os agentes)', note:'Nota do revisor', notePh:'Por quê? Esta nota fica no registro.',
+      save:'Salvar revisão', needCat:'Selecione pelo menos uma categoria.', needNote:'Adicione uma nota breve.', saved:'Revisão salva e registrada.',
+      reviewedBy:'Revisada por {u} · {d}', original:'Resposta original', fbTitle:'Respostas à pesquisa',
+      fbAvg:'Nota média', fbUseful:'Acharam útil', fbResp:'Respostas', fbLow:'Notas baixas (1–2)', fbNone:'Ainda não há respostas à pesquisa.', query:'Pergunta', rating:'Nota',
+      auditTitle:'Registro de auditoria', auditHelp:'Cada decisão de revisão fica registrada com a conta SEI do revisor (do Cloudflare Access) e o horário.',
+      when:'Quando', reviewer:'Revisor', action:'Ação', item:'Pergunta', auditEmpty:'Ainda não há decisões de revisão.',
+      modeTitle:'Modo de revisão', modePostT:'Revisão posterior (atual)', modePostD:'Os usuários recebem a resposta na hora. O SEI revisa depois, começando pelos casos sinalizados (nota baixa, "não foi útil", ativos fora da cobertura de dados).',
+      modePreT:'Aprovação prévia (próxima fase)', modePreD:'As respostas ficam na fila e só são entregues depois que um especialista do SEI as aprova ou corrige. Mais rigoroso, mas o usuário espera.',
+      revTitle:'Revisores', revYou:'você', revRole:'Revisor SEI', revHelp:'O Cloudflare Access limita o acesso a contas @sei.org. Ali mesmo é possível definir um grupo menor de revisores sem alterar o código.',
+      privTitle:'Dados e privacidade', privText:'Os usuários são pseudonimizados e os e-mails de entrega são mascarados. Na versão de produção, os dados ficarão na conta Cloudflare do SEI com prazo de retenção. Neste protótipo tudo fica neste navegador.',
+      reset:'Restaurar dados de exemplo', resetOk:'Dados de exemplo restaurados.', modeSaved:'Modo de revisão atualizado.',
+      rTitle:'Relatório resumo de risco climático', rStamp:'Revisão humana do SEI', rPending:'Pendente de revisão do SEI', rQuestion:'Pergunta', rAnswer:'Resposta', rData:'Dados usados', rSource:'Fonte', rPrint:'Salvar como PDF / Imprimir',
+      rNote:'Gerado por uma demonstração do fluxo de agentes de IA. Os valores são mudanças em relação ao período de referência do CIE a ~55 km de resolução e descrevem a ameaça climática, não perdas financeiras.',
+      noSession:'Nenhuma sessão ativa', redirect:'Sessão iniciada. Voltando ao visualizador…'
+    }
+  };
+  var LOCALE = { en:'en-GB', es:'es-CO', pt:'pt-BR' };
+  var CATS = ['c_data', 'c_interp', 'c_caveat', 'c_scope', 'c_lang'];
+
+  function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); }
+  /** Deja solo <b> del HTML generado por los agentes */
+  function safeAnswer(h) { return String(h || '').replace(/<(?!\/?b>)[^>]*>/g, ''); }
+  function plain(h) { var d = document.createElement('div'); d.innerHTML = safeAnswer(h); return d.textContent.replace(/\s+/g, ' ').trim(); }
+
+  var lang = T[get('ace-lang')] ? get('ace-lang') : 'en';
+  function tr(k, v) { var s = (T[lang] && T[lang][k]) || T.en[k] || k; if (v) Object.keys(v).forEach(function (x) { s = s.split('{' + x + '}').join(v[x]); }); return s; }
+  var USER = null;
+
+  // ---------------- Datos de ejemplo (valores coherentes con CIE v2, Colombia) ----------------
+  /** Fecha relativa a ahora: d días y h horas atrás (siempre en el pasado) */
+  function daysAgo(d, h) { return new Date(Date.now() - ((d * 24) + (h || 0)) * 3600e3 - 7 * 60e3).toISOString(); }
+  function R(name, vA, vB, tier) { return { name: name, vA: vA, vB: vB, diff: +(vB - vA).toFixed(3), tier: tier }; }
+  function sampleData() {
+    return [
+      { id:'q-demo-01', ts:daysAgo(0, 1), lang:'es', origin:'sample', status:'pending', user:'U-7F3A',
+        query:'¿Qué planta enfrenta el mayor aumento de días de calor peligroso para 2050?', variable:'HI-danger', varName:'Días de calor peligroso', unit:'días/año', worse:'high',
+        scenario:'RCP 4.5', warming:[1.4, 1.9], horizons:['2030', '2050'],
+        ranking:[R('Tolú',12.4,31.7,'High'),R('Cartagena',10.9,28.3,'High'),R('Nare',6.2,18.5,'Medium'),R('Rioclaro',5.1,15.9,'Medium'),R('Yumbo',2.3,7.8,'Low'),R('Cairo',1.4,4.6,'Low'),R('Sogamoso',0.1,0.6,'Low')],
+        answerHTML:'Bajo RCP 4.5, <b>Tolú</b> enfrenta el mayor riesgo de días de calor peligroso para 2050: +31,7 días/año frente al periodo de referencia (2030: +12,4). El riesgo crece más rápido entre 2030 y 2050 en <b>Tolú</b> (+19,3). La menor exposición en 2050 está en <b>Sogamoso</b> (+0,6). Priorice protocolos de estrés térmico para los trabajadores en los sitios más expuestos.',
+        delivery:{ channel:'email', to:'a***@example.org' }, survey:{ rating:2, useful:false, comment:'Esperaba ver datos por mes, no solo anuales.' } },
+      { id:'q-demo-02', ts:daysAgo(0, 3), lang:'en', origin:'sample', status:'pending', user:'U-21C9',
+        query:'Which location will have the highest risk of consecutive dry days in 2030 and 2050?', variable:'consecutive_dry_days', varName:'Consecutive dry days', unit:'days', worse:'high',
+        scenario:'RCP 4.5', warming:[1.4, 1.9], horizons:['2030', '2050'],
+        ranking:[R('Tolú',4.1,6.8,'High'),R('Cartagena',3.6,6.1,'High'),R('Sogamoso',2.2,3.9,'Medium'),R('Nare',1.5,2.8,'Medium'),R('Rioclaro',1.3,2.4,'Low'),R('Cairo',0.9,1.7,'Low'),R('Yumbo',0.6,1.2,'Low')],
+        answerHTML:'Under RCP 4.5, <b>Tolú</b> faces the highest risk for consecutive dry days by 2050: +6.8 days relative to the reference period (2030: +4.1). <b>Tolú</b> is also the most exposed location in 2030. The lowest exposure in 2050 is at <b>Yumbo</b> (+1.2). Prioritise a site-level water-availability assessment and contingency plans for dry seasons at the most exposed sites.',
+        delivery:{ channel:'download' }, survey:{ rating:4, useful:true, comment:'' } },
+      { id:'q-demo-03', ts:daysAgo(1, 2), lang:'en', origin:'sample', status:'pending', user:'U-88B0', outside:1,
+        query:'Which of our sites are most exposed to drought by 2050?', variable:'spei_gamma_12', varName:'Drought index (SPEI-12)', unit:'index', worse:'low',
+        scenario:'RCP 8.5', warming:[1.5, 2.3], horizons:['2030', '2050'],
+        ranking:[R('Cartagena',-0.21,-0.48,'High'),R('Tolú',-0.18,-0.44,'High'),R('Sogamoso',-0.12,-0.31,'Medium'),R('Nare',-0.08,-0.22,'Medium'),R('Rioclaro',-0.06,-0.19,'Low'),R('Cairo',-0.03,-0.11,'Low')],
+        answerHTML:'Under RCP 8.5, <b>Cartagena</b> faces the highest risk for drought by 2050: −0.48 relative to the reference period (2030: −0.21). For this variable, lower values mean more risk. One asset is outside the data coverage and was excluded. Prioritise a site-level water-availability assessment at the most exposed sites.',
+        delivery:{ channel:'email', to:'m***@example.org' }, survey:{ rating:4, useful:true, comment:'Please explain what SPEI means.' } },
+      { id:'q-demo-04', ts:daysAgo(2, 11), lang:'pt', origin:'sample', status:'corrected', user:'U-4D12',
+        query:'Quais ativos estão mais expostos a chuvas extremas de 5 dias até 2050?', variable:'rx5day', varName:'Chuva extrema em 5 dias', unit:'%', worse:'high',
+        scenario:'RCP 4.5', warming:[1.4, 1.9], horizons:['2030', '2050'],
+        ranking:[R('Yumbo',4.8,9.6,'High'),R('Cairo',4.1,8.7,'High'),R('Rioclaro',3.2,7.1,'Medium'),R('Nare',3.0,6.4,'Medium'),R('Sogamoso',2.4,5.2,'Low'),R('Cartagena',1.1,2.9,'Low'),R('Tolú',0.9,2.5,'Low')],
+        answerHTML:'No RCP 4.5, <b>Yumbo</b> enfrenta o maior risco de chuva extrema em 5 dias até 2050: +9,6% em relação ao período de referência (2030: +4,8%). A menor exposição em 2050 está em <b>Tolú</b> (+2,5%). Priorize a revisão da drenagem e das rotas de acesso nos locais mais expostos.',
+        delivery:{ channel:'email', to:'r***@example.org' }, survey:{ rating:3, useful:true, comment:'' },
+        review:{ by:'reviewer', at:daysAgo(1, 9), decision:'corrected', cats:['c_caveat'], note:'Added caveat: ~55 km resolution does not capture local flash floods.',
+          corrected:'No RCP 4.5, Yumbo enfrenta o maior risco de chuva extrema em 5 dias até 2050: +9,6% em relação ao período de referência (2030: +4,8%). A menor exposição em 2050 está em Tolú (+2,5%). Atenção: a resolução de ~55 km não captura inundações repentinas locais; para decisões por local, combine com estudos hidrológicos. Priorize a revisão da drenagem e das rotas de acesso nos locais mais expostos.' } },
+      { id:'q-demo-05', ts:daysAgo(3, 16), lang:'en', origin:'sample', status:'rejected', user:'U-0A77',
+        query:'Should we sell our assets in Tolú because of water stress?', variable:'wsi', varName:'Water stress index', unit:'index', worse:'high',
+        scenario:'RCP 4.5', warming:[1.4, 1.9], horizons:['2030', '2050'],
+        ranking:[R('Tolú',0.21,0.34,'High'),R('Cartagena',0.18,0.30,'High'),R('Sogamoso',0.12,0.19,'Medium'),R('Nare',0.08,0.13,'Medium'),R('Yumbo',0.07,0.11,'Low')],
+        answerHTML:'Under RCP 4.5, <b>Tolú</b> faces the highest water stress by 2050 (+0.34). Divesting from Tolú would reduce the portfolio\'s exposure to water stress.',
+        delivery:{ channel:'download' }, survey:null,
+        review:{ by:'reviewer', at:daysAgo(2, 10), decision:'rejected', cats:['c_scope', 'c_interp'], note:'The tool screens climate hazard; it must not give investment or divestment advice. Agent instructions updated.', corrected:'' } },
+      { id:'q-demo-06', ts:daysAgo(4, 10), lang:'en', origin:'sample', status:'approved', user:'U-5E40',
+        query:'Compare labour productivity loss in Nare and Yumbo.', variable:'labour-productivity-loss', varName:'Labour productivity loss', unit:'%', worse:'high',
+        scenario:'RCP 4.5', warming:[1.4, 1.9], horizons:['2030', '2050'],
+        ranking:[R('Nare',1.25,3.74,'High'),R('Tolú',1.05,2.96,'High'),R('Rioclaro',0.857,2.35,'Medium'),R('Cartagena',0.749,1.95,'Medium'),R('Cairo',0.412,0.916,'Low'),R('Yumbo',0.36,0.82,'Low'),R('Sogamoso',0.308,0.719,'Low')],
+        answerHTML:'Under RCP 4.5, <b>Nare</b> faces the highest risk for labour productivity loss by 2050: +3.74% relative to the reference period (2030: +1.25%). <b>Yumbo</b> shows a much lower loss (2050: +0.82%). Risk grows fastest between 2030 and 2050 at <b>Nare</b> (+2.49). Prioritise heat-stress protocols for workers (shifts, shade, hydration) at the most exposed sites.',
+        delivery:{ channel:'email', to:'j***@example.org' }, survey:{ rating:5, useful:true, comment:'Clear and useful for our ESG committee.' },
+        review:{ by:'reviewer', at:daysAgo(3, 12), decision:'approved', cats:[], note:'Values match the query panel.', corrected:'' } },
+      { id:'q-demo-07', ts:daysAgo(5, 14), lang:'es', origin:'sample', status:'approved', user:'U-9B61',
+        query:'¿Cuánto aumentará la temperatura media en Cartagena y Tolú?', variable:'tasAdjust', varName:'Temperatura media', unit:'°C', worse:'high',
+        scenario:'RCP 4.5', warming:[1.4, 1.9], horizons:['2030', '2050'],
+        ranking:[R('Tolú',0.62,1.08,'High'),R('Cartagena',0.58,1.01,'High'),R('Nare',0.55,0.97,'Medium'),R('Sogamoso',0.49,0.88,'Low')],
+        answerHTML:'Bajo RCP 4.5, <b>Tolú</b> tendrá el mayor aumento de temperatura media para 2050: +1,08 °C frente al periodo de referencia (2030: +0,62 °C). <b>Cartagena</b> sigue de cerca (+1,01 °C). Priorice protocolos de estrés térmico y necesidades de enfriamiento en los sitios más expuestos.',
+        delivery:{ channel:'download' }, survey:{ rating:5, useful:true, comment:'' },
+        review:{ by:'reviewer', at:daysAgo(4, 9), decision:'approved', cats:[], note:'', corrected:'' } },
+      { id:'q-demo-08', ts:daysAgo(6, 12), lang:'pt', origin:'sample', status:'corrected', user:'U-3C28',
+        query:'Qual local terá mais risco de incêndio em 2050?', variable:'fwixd', varName:'Dias de perigo de incêndio', unit:'dias', worse:'high',
+        scenario:'RCP 8.5', warming:[1.5, 2.3], horizons:['2030', '2050'],
+        ranking:[R('Sogamoso',3.1,7.4,'High'),R('Tolú',2.6,6.2,'High'),R('Cartagena',2.2,5.5,'Medium'),R('Nare',1.0,2.7,'Low')],
+        answerHTML:'No RCP 8.5, <b>Sogamoso</b> enfrenta o maior risco de incêndio até 2050: +7,4 dias (2030: +3,1). Priorize medidas de prevenção de incêndios ao redor dos locais mais expostos.',
+        delivery:{ channel:'email', to:'c***@example.org' }, survey:{ rating:3, useful:true, comment:'' },
+        review:{ by:'reviewer', at:daysAgo(5, 15), decision:'corrected', cats:['c_data'], note:'2050 value for Sogamoso copied from RCP 4.5 run; corrected to RCP 8.5 value.', corrected:'No RCP 8.5, Sogamoso enfrenta o maior risco de incêndio até 2050: +8,1 dias (2030: +3,1). Priorize medidas de prevenção de incêndios ao redor dos locais mais expostos.' } }
+    ];
+  }
+
+  // ---------------- Estado (en este navegador) ----------------
+  var ADMIN_KEY = 'ace-hitl-admin';
+  var S = loadState();
+  var view = 'overview', filter = 'all', selected = null;
+
+  function loadState() {
+    var s = null;
+    try { s = JSON.parse(get(ADMIN_KEY) || 'null'); } catch (e) {}
+    if (!s || !Array.isArray(s.items)) s = { mode:'post', items:sampleData(), audit:sampleAudit() };
+    return s;
+  }
+  function sampleAudit() {
+    return sampleData().filter(function (x) { return x.review; }).map(function (x) {
+      return { at:x.review.at, by:'reviewer', action:x.review.decision, id:x.id, query:x.query, note:x.review.note };
+    });
+  }
+  function saveState() { set(ADMIN_KEY, JSON.stringify(S)); }
+
+  /** Suma las consultas reales hechas en el visor de este navegador */
+  function mergeLive() {
+    var live = [];
+    try { live = JSON.parse(get('ace-hitl-runs') || '[]'); } catch (e) {}
+    live.forEach(function (r) {
+      if (!r || !r.id || !r.answerHTML) return;
+      var cur = S.items.find(function (x) { return x.id === r.id; });
+      if (!cur) {
+        var it = JSON.parse(JSON.stringify(r)); it.origin = 'live'; it.status = 'pending'; it.user = 'U-' + r.id.slice(-4).toUpperCase();
+        it.outside = (r.payload && r.payload.assets ? r.payload.assets.filter(function (a) { var v = Object.keys(a).filter(function (k) { return /^\d{4}$/.test(k); }); return v.every(function (k) { return a[k] == null; }); }).length : 0);
+        S.items.unshift(it);
+      } else if (cur.origin === 'live') {
+        cur.delivery = r.delivery || cur.delivery; cur.survey = r.survey || cur.survey; cur.ranking = r.ranking || cur.ranking;
+      }
+    });
+    S.items.sort(function (a, b) { return a.ts < b.ts ? 1 : -1; });
+  }
+
+  function reviewerName(by) { return by === 'reviewer' ? (USER || 'reviewer@sei.org') : by; }
+  function flags(it) {
+    var f = [];
+    if (it.survey && it.survey.rating && it.survey.rating <= 2) f.push('fl_rating');
+    if (it.survey && it.survey.useful === false) f.push('fl_useful');
+    if (it.outside) f.push('fl_outside');
+    return f;
+  }
+  function isPending(it) { return it.status === 'pending'; }
+  function fmtDate(iso, withTime) {
+    var d = new Date(iso);
+    return d.toLocaleDateString(LOCALE[lang], { day:'2-digit', month:'short', year:'numeric' }) + (withTime ? ' · ' + d.toLocaleTimeString(LOCALE[lang], { hour:'2-digit', minute:'2-digit' }) : '');
+  }
+  function fmtNum(v) { if (v == null || isNaN(v)) return '—'; var a = Math.abs(v); return (+v).toLocaleString(LOCALE[lang], { maximumFractionDigits: a >= 10 ? 1 : a >= 1 ? 2 : 3 }); }
+  function signed(v) { return v == null ? '—' : (v > 0 ? '+' : '') + fmtNum(v); }
+  function stars(n) { var s = ''; for (var i = 1; i <= 5; i++) s += i <= n ? '★' : '<span class="off">★</span>'; return '<span class="stars">' + s + '</span>'; }
+  function statusBadge(it) {
+    var k = it.status === 'pending' && S.mode === 'pre' ? 's_pendingPre' : 's_' + it.status;
+    var icon = { pending:'fa-hourglass-half', approved:'fa-circle-check', corrected:'fa-pen', rejected:'fa-ban' }[it.status];
+    return '<span class="badge b-' + it.status + '"><i class="fa-solid ' + icon + '"></i> ' + tr(k) + '</span>';
+  }
+  function toast(msg) { document.querySelectorAll('.toast').forEach(function (x) { x.remove(); }); var el = document.createElement('div'); el.className = 'toast'; el.innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--green)"></i> ' + msg; document.body.appendChild(el); setTimeout(function () { el.remove(); }, 3200); }
+
+  // ---------------- Textos estáticos ----------------
+  function applyStatic() {
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-t]').forEach(function (el) { el.innerHTML = tr(el.dataset.t); });
+    document.getElementById('lang').value = lang;
+    var th = document.getElementById('theme');
+    th.innerHTML = '<i class="fa-solid ' + (document.documentElement.dataset.theme === 'light' ? 'fa-sun' : 'fa-moon') + '"></i>';
+  }
+
+  // ---------------- Resumen ----------------
+  function renderOverview() {
+    var items = S.items, reviewed = items.filter(function (x) { return !isPending(x); });
+    var pend = items.filter(isPending), flagged = pend.filter(function (x) { return flags(x).length; });
+    var approved = reviewed.filter(function (x) { return x.status === 'approved'; }).length;
+    var surveys = items.filter(function (x) { return x.survey && x.survey.rating; });
+    var avg = surveys.length ? surveys.reduce(function (s, x) { return s + x.survey.rating; }, 0) / surveys.length : 0;
+    var k = [
+      ['fa-robot', 'var(--sky)', items.length, tr('kQueries'), tr('kQueriesS')],
+      ['fa-hourglass-half', 'var(--amber)', pend.length, tr('kPending'), tr('kPendingS', { n: flagged.length })],
+      ['fa-circle-check', 'var(--green)', reviewed.length ? Math.round(approved / reviewed.length * 100) + '%' : '—', tr('kApproval'), tr('kApprovalS')],
+      ['fa-star', 'var(--amber)', surveys.length ? avg.toLocaleString(LOCALE[lang], { maximumFractionDigits:1 }) + ' / 5' : '—', tr('kRating'), tr('kRatingS', { n: surveys.length })]
+    ];
+    document.getElementById('kpis').innerHTML = k.map(function (c) {
+      return '<div class="card kpi"><div class="l"><i class="fa-solid ' + c[0] + '" style="color:' + c[1] + '"></i> ' + c[3] + '</div><div class="v">' + c[2] + '</div><div class="s">' + c[4] + '</div></div>';
+    }).join('');
+
+    document.getElementById('modeName').textContent = tr(S.mode === 'pre' ? 'mPre' : 'mPost');
+    var node = function (icon, color, t1, t2, extra) { return '<div class="node ' + (extra || '') + '"><i class="fa-solid ' + icon + '" style="color:' + color + '"></i><b>' + tr(t1) + '</b><span class="faint">' + tr(t2) + '</span></div>'; };
+    var arrow = '<i class="fa-solid fa-chevron-right arrow"></i>';
+    var nodes = [node('fa-user', 'var(--muted)', 'nUser', 'nUserS'), node('fa-magnifying-glass-chart', 'var(--sky)', 'n1', 'n1s'), node('fa-shield-halved', 'var(--amber)', 'n2', 'n2s'), node('fa-file-lines', 'var(--green)', 'n3', 'n3s')];
+    var hitl = node('fa-user-shield', 'var(--green)', 'nH', 'nHs', 'hitl'), n4 = node('fa-paper-plane', 'var(--violet)', 'n4', 'n4s');
+    nodes = S.mode === 'pre' ? nodes.concat([hitl, n4]) : nodes.concat([n4, hitl]);
+    document.getElementById('flow').innerHTML = nodes.join(arrow);
+    document.getElementById('flowNote').textContent = tr(S.mode === 'pre' ? 'notePre' : 'notePost');
+
+    var counts = {}; CATS.forEach(function (c) { counts[c] = 0; });
+    items.forEach(function (x) { (x.review && x.review.cats || []).forEach(function (c) { counts[c] = (counts[c] || 0) + 1; }); });
+    var max = Math.max.apply(null, CATS.map(function (c) { return counts[c]; }).concat([1]));
+    document.getElementById('catBars').innerHTML = CATS.map(function (c) {
+      return '<div class="row"><span>' + tr(c) + '</span><div class="track"><div class="fill" style="width:' + (counts[c] / max * 100) + '%"></div></div><b class="mono" style="text-align:right">' + counts[c] + '</b></div>';
+    }).join('');
+    var dist = [5, 4, 3, 2, 1].map(function (n) { return surveys.filter(function (x) { return x.survey.rating === n; }).length; });
+    var dmax = Math.max.apply(null, dist.concat([1]));
+    document.getElementById('ratingBars').innerHTML = [5, 4, 3, 2, 1].map(function (n, i) {
+      return '<div class="row"><span>' + stars(n) + '</span><div class="track"><div class="fill" style="width:' + (dist[i] / dmax * 100) + '%;background:var(--amber)"></div></div><b class="mono" style="text-align:right">' + dist[i] + '</b></div>';
+    }).join('');
+    document.getElementById('pendingCount').textContent = pend.length;
+  }
+
+  // ---------------- Cola de revisión ----------------
+  function filtered() {
+    return S.items.filter(function (x) {
+      if (filter === 'pending') return isPending(x);
+      if (filter === 'flagged') return flags(x).length > 0;
+      if (filter === 'reviewed') return !isPending(x);
+      return true;
+    }).sort(function (a, b) {
+      // pendientes y marcadas primero
+      var pa = (isPending(a) ? 2 : 0) + (flags(a).length ? 1 : 0), pb = (isPending(b) ? 2 : 0) + (flags(b).length ? 1 : 0);
+      return pb - pa || (a.ts < b.ts ? 1 : -1);
+    });
+  }
+  function renderQueue() {
+    document.getElementById('filters').innerHTML = ['all', 'pending', 'flagged', 'reviewed'].map(function (f) {
+      var n = f === 'all' ? S.items.length : f === 'pending' ? S.items.filter(isPending).length : f === 'flagged' ? S.items.filter(function (x) { return flags(x).length; }).length : S.items.filter(function (x) { return !isPending(x); }).length;
+      return '<button data-f="' + f + '" class="' + (filter === f ? 'on' : '') + '">' + tr('f' + f.charAt(0).toUpperCase() + f.slice(1)) + ' · ' + n + '</button>';
+    }).join('');
+    var list = filtered();
+    if (!selected || !S.items.some(function (x) { return x.id === selected; })) selected = list.length ? list[0].id : null;
+    document.getElementById('list').innerHTML = list.length ? list.map(function (it) {
+      return '<button class="item' + (it.id === selected ? ' sel' : '') + '" data-id="' + esc(it.id) + '">' +
+        '<div class="q">' + esc(it.query) + '</div>' +
+        '<div class="m">' + statusBadge(it) + (it.origin === 'live' ? '<span class="badge b-live"><i class="fa-solid fa-bolt"></i> ' + tr('live') + '</span>' : '') +
+        flags(it).map(function (f) { return '<span class="badge b-flag"><i class="fa-solid fa-flag"></i> ' + tr(f) + '</span>'; }).join('') + '</div>' +
+        '<div class="m"><span>' + esc(it.varName || it.variable) + '</span>·<span>' + fmtDate(it.ts) + '</span>·<span class="mono">' + esc((it.lang || 'en').toUpperCase()) + '</span></div></button>';
+    }).join('') : '<div class="empty">' + tr('emptyList') + '</div>';
+    renderDetail();
+  }
+
+  function renderDetail() {
+    var box = document.getElementById('detail');
+    var it = S.items.find(function (x) { return x.id === selected; });
+    if (!it) { box.innerHTML = '<div class="empty"><i class="fa-solid fa-hand-pointer"></i><br>' + tr('pickItem') + '</div>'; return; }
+    var rk = it.ranking || [];
+    var worse = it.worse || 'high';
+    var worsening = rk.filter(function (a) { return a.diff != null && (worse === 'high' ? a.diff > 0 : a.diff < 0); }).length;
+    var payload = it.payload || {
+      query_id: it.id, intent: 'rank_assets_by_hazard', language: it.lang,
+      variable: { code: it.variable, unit: it.unit, higher_is_worse: worse === 'high' },
+      scenario: { rcp: it.scenario, global_warming_c: it.warming }, horizons: it.horizons,
+      assets: rk.map(function (a) { var o = { name: a.name }; o[it.horizons[0]] = a.vA; o[it.horizons[1]] = a.vB; o.delta = a.diff; return o; })
     };
-    function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-    function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
-    function del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+    var h = '';
+    h += '<div class="head"><div><div class="faint" style="font-size:11px">' + tr('qid') + ' <span class="mono">' + esc(it.id) + '</span> · ' + fmtDate(it.ts, true) + ' · ' + tr('user') + ': <span class="mono">' + esc(it.user || '—') + '</span> (' + tr('userAnon') + ')</div>' +
+      '<div class="q">“' + esc(it.query) + '”</div></div><div class="m" style="display:flex;gap:6px;flex-wrap:wrap">' + statusBadge(it) +
+      (it.origin === 'live' ? '<span class="badge b-live"><i class="fa-solid fa-bolt"></i> ' + tr('live') + '</span>' : '') +
+      flags(it).map(function (f) { return '<span class="badge b-flag"><i class="fa-solid fa-flag"></i> ' + tr(f) + '</span>'; }).join('') + '</div></div>';
 
-    var L = TXT[get('ace-lang')] || TXT.en;
-    document.documentElement.lang = TXT[get('ace-lang')] ? get('ace-lang') : 'en';
-    document.getElementById('t-title').textContent = L.title;
-    document.getElementById('t-sub').textContent = L.sub;
-    document.getElementById('t-back').textContent = L.back;
-    document.getElementById('t-out').textContent = L.out;
-    var who = document.getElementById('who');
-    who.textContent = L.checking;
+    h += '<div class="steps">';
+    // Agente 1
+    h += '<div class="step s1"><div class="t"><span class="n">1</span><i class="fa-solid fa-magnifying-glass-chart" style="color:var(--sky)"></i> ' + tr('a1') + '</div><div class="c"><div class="kv">' +
+      '<div><span>' + tr('variable') + '</span>' + esc(it.varName || it.variable) + (it.unit ? ' (' + esc(it.unit) + ')' : '') + '</div>' +
+      '<div><span>' + tr('scenario') + '</span>' + esc(it.scenario) + '</div>' +
+      '<div><span>' + tr('warming') + '</span>' + (it.warming ? '+' + it.warming[0] + ' °C / +' + it.warming[1] + ' °C' : '—') + '</div>' +
+      '<div><span>' + tr('horizons') + '</span>' + esc((it.horizons || []).join(' · ')) + '</div>' +
+      '<div><span>' + tr('assets') + '</span>' + (rk.length + (it.outside || 0)) + '</div></div></div></div>';
+    // Agente 2
+    h += '<div class="step s2"><div class="t"><span class="n">2</span><i class="fa-solid fa-shield-halved" style="color:var(--amber)"></i> ' + tr('a2') + '</div><div class="c"><div class="kv">' +
+      '<div><span>' + tr('validated') + '</span><b style="color:var(--green)">' + rk.length + '</b></div>' +
+      '<div><span>' + tr('outside') + '</span><b style="color:' + (it.outside ? 'var(--rose)' : 'var(--text)') + '">' + (it.outside || 0) + '</b></div>' +
+      '<div><span>' + tr('worsening') + '</span><b style="color:var(--amber)">' + worsening + ' / ' + rk.length + '</b></div>' +
+      '<div><span>' + tr('consistency') + '</span><b style="color:var(--green)">' + tr('ok') + '</b></div></div>' +
+      '<details style="margin-top:8px"><summary class="muted" style="cursor:pointer;font-size:12px"><i class="fa-solid fa-code" style="color:var(--amber)"></i> ' + tr('payload') + '</summary><pre class="mono">' + esc(JSON.stringify(payload, null, 2)) + '</pre></details>' +
+      '<details style="margin-top:6px"><summary class="muted" style="cursor:pointer;font-size:12px"><i class="fa-solid fa-book" style="color:var(--amber)"></i> ' + tr('rag') + '</summary><table style="margin-top:6px"><tbody>' +
+      [['rag1', '0.92'], ['rag2', '0.87'], ['rag3', '0.81']].map(function (r) { return '<tr><td>' + tr(r[0]) + '</td><td class="num" style="color:var(--blue)">sim. ' + r[1] + '</td></tr>'; }).join('') + '</tbody></table></details></div></div>';
+    // Agente 3
+    var corrected = it.review && it.review.decision === 'corrected' && it.review.corrected;
+    h += '<div class="step s3"><div class="t"><span class="n">3</span><i class="fa-solid fa-file-lines" style="color:var(--green)"></i> ' + tr('a3') + '</div><div class="c">' +
+      (corrected ? '<div class="faint" style="font-size:11px;margin-bottom:4px">' + tr('original') + '</div><div class="answer old">' + safeAnswer(it.answerHTML) + '</div>' +
+        '<div class="faint" style="font-size:11px;margin:8px 0 4px">' + tr('s_corrected') + '</div><div class="answer" style="border-color:var(--blue)">' + esc(it.review.corrected) + '</div>'
+        : '<div class="faint" style="font-size:11px;margin-bottom:4px">' + tr('answer') + '</div><div class="answer">' + safeAnswer(it.answerHTML) + '</div>') +
+      '<div style="overflow-x:auto;margin-top:10px"><table><thead><tr><th>#</th><th>' + tr('asset') + '</th><th class="num">' + esc(it.horizons[0]) + '</th><th class="num">' + esc(it.horizons[1]) + '</th><th class="num">Δ</th></tr></thead><tbody>' +
+      rk.slice(0, 7).map(function (a, i) { var bad = a.diff != null && (worse === 'high' ? a.diff > 0 : a.diff < 0); return '<tr><td class="faint">' + (i + 1) + '</td><td>' + esc(a.name) + '</td><td class="num">' + fmtNum(a.vA) + '</td><td class="num" style="color:var(--amber)">' + fmtNum(a.vB) + '</td><td class="num ' + (bad ? 'up' : 'down') + '">' + signed(a.diff) + '</td></tr>'; }).join('') +
+      '</tbody></table></div><div style="margin-top:10px"><button class="btn" data-report="' + esc(it.id) + '"><i class="fa-solid fa-file-pdf" style="color:var(--rose)"></i> ' + tr('preview') + '</button></div></div></div>';
+    // Agente 4
+    var dv = it.delivery, sv = it.survey;
+    h += '<div class="step s4"><div class="t"><span class="n">4</span><i class="fa-solid fa-paper-plane" style="color:var(--violet)"></i> ' + tr('a4') + '</div><div class="c"><div class="kv">' +
+      '<div><span>' + tr('channel') + '</span>' + (dv ? (dv.channel === 'email' ? '<i class="fa-solid fa-envelope" style="color:var(--violet)"></i> ' + tr('ch_email') + (dv.to ? ' · <span class="mono">' + esc(dv.to) + '</span>' : '') : '<i class="fa-solid fa-download" style="color:var(--violet)"></i> ' + tr('ch_download')) : tr('ch_none')) + '</div>' +
+      (sv && sv.rating ? '<div><span>' + tr('survey') + '</span>' + stars(sv.rating) + ' ' + sv.rating + '/5</div><div><span>' + tr('useful') + '</span>' + (sv.useful == null ? '—' : sv.useful ? tr('yes') : '<b style="color:var(--rose)">' + tr('no') + '</b>') + '</div>' : '<div><span>' + tr('survey') + '</span><span class="faint">' + tr('noSurvey') + '</span></div>') +
+      '</div>' + (sv && sv.comment ? '<div class="answer" style="margin-top:8px"><i class="fa-solid fa-quote-left faint"></i> ' + esc(sv.comment) + '</div>' : '') + '</div></div>';
+    h += '</div>';
 
-    // Cerrar sesión: borra la sesión del visor y la de Cloudflare Access
-    document.getElementById('signout').addEventListener('click', function () {
+    // Revisión humana
+    if (isPending(it)) {
+      h += '<div class="review"><h4><i class="fa-solid fa-user-shield" style="color:var(--green)"></i> ' + tr('revTitleH') + ' · <span class="mono" style="font-weight:600">' + esc(USER || '') + '</span></h4>' +
+        '<div class="decisions">' +
+        '<label><input type="radio" name="dec" value="approved" checked> <i class="fa-solid fa-circle-check" style="color:var(--green)"></i> ' + tr(S.mode === 'pre' ? 'd_approvePre' : 'd_approve') + '</label>' +
+        '<label><input type="radio" name="dec" value="corrected"> <i class="fa-solid fa-pen" style="color:var(--blue)"></i> ' + tr('d_correct') + '</label>' +
+        '<label><input type="radio" name="dec" value="rejected"> <i class="fa-solid fa-ban" style="color:var(--rose)"></i> ' + tr('d_reject') + '</label></div>' +
+        '<div id="catBox" class="hidden"><div class="field"><span>' + tr('cats') + '</span><div class="cats">' + CATS.map(function (c) { return '<label><input type="checkbox" value="' + c + '"> ' + tr(c) + '</label>'; }).join('') + '</div></div></div>' +
+        '<div id="corrBox" class="hidden field"><span>' + tr('corrected') + '</span><textarea id="corrText" rows="4">' + esc(plain(it.answerHTML)) + '</textarea></div>' +
+        '<div class="field"><span>' + tr('note') + '</span><textarea id="noteText" rows="2" placeholder="' + esc(tr('notePh')) + '"></textarea></div>' +
+        '<button class="btn green" id="saveReview"><i class="fa-solid fa-floppy-disk"></i> ' + tr('save') + '</button></div>';
+    } else if (it.review) {
+      var rv = it.review;
+      h += '<div class="done"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' + statusBadge(it) + '<span class="muted">' + tr('reviewedBy', { u: '<span class="mono">' + esc(reviewerName(rv.by)) + '</span>', d: fmtDate(rv.at, true) }) + '</span></div>' +
+        ((rv.cats || []).length ? '<div style="margin-top:6px">' + rv.cats.map(function (c) { return '<span class="badge b-corrected" style="margin-right:4px">' + tr(c) + '</span>'; }).join('') + '</div>' : '') +
+        (rv.note ? '<div style="margin-top:6px"><i class="fa-solid fa-note-sticky faint"></i> ' + esc(rv.note) + '</div>' : '') + '</div>';
+    }
+    box.innerHTML = h;
+  }
+
+  function saveReview() {
+    var it = S.items.find(function (x) { return x.id === selected; });
+    if (!it) return;
+    var dec = (document.querySelector('input[name=dec]:checked') || {}).value || 'approved';
+    var cats = [].slice.call(document.querySelectorAll('#catBox input:checked')).map(function (x) { return x.value; });
+    var note = document.getElementById('noteText').value.trim();
+    var corr = dec === 'corrected' ? document.getElementById('corrText').value.trim() : '';
+    if (dec !== 'approved' && !cats.length) { toast(tr('needCat')); return; }
+    if (dec !== 'approved' && !note) { toast(tr('needNote')); return; }
+    var at = new Date().toISOString();
+    it.status = dec;
+    it.review = { by: USER || 'reviewer@sei.org', at: at, decision: dec, cats: dec === 'approved' ? [] : cats, note: note, corrected: corr };
+    S.audit.unshift({ at: at, by: USER || 'reviewer@sei.org', action: dec, id: it.id, query: it.query, note: note });
+    saveState();
+    toast(tr('saved'));
+    renderAll();
+  }
+
+  // ---------------- Opiniones ----------------
+  function renderFeedback() {
+    var sv = S.items.filter(function (x) { return x.survey && x.survey.rating; });
+    var avg = sv.length ? sv.reduce(function (s, x) { return s + x.survey.rating; }, 0) / sv.length : 0;
+    var useful = sv.filter(function (x) { return x.survey.useful === true; }).length;
+    var low = sv.filter(function (x) { return x.survey.rating <= 2; }).length;
+    var k = [['fa-star', 'var(--amber)', sv.length ? avg.toLocaleString(LOCALE[lang], { maximumFractionDigits:1 }) + ' / 5' : '—', tr('fbAvg')],
+             ['fa-thumbs-up', 'var(--green)', sv.length ? Math.round(useful / sv.length * 100) + '%' : '—', tr('fbUseful')],
+             ['fa-comments', 'var(--violet)', sv.length, tr('fbResp')], ['fa-flag', 'var(--rose)', low, tr('fbLow')]];
+    document.getElementById('fbKpis').innerHTML = k.map(function (c) { return '<div class="card kpi"><div class="l"><i class="fa-solid ' + c[0] + '" style="color:' + c[1] + '"></i> ' + c[3] + '</div><div class="v">' + c[2] + '</div></div>'; }).join('');
+    document.getElementById('fbTable').innerHTML = sv.length ? '<thead><tr><th>' + tr('date') + '</th><th>' + tr('query') + '</th><th>' + tr('rating') + '</th><th>' + tr('useful') + '</th><th>' + tr('comment') + '</th></tr></thead><tbody>' +
+      sv.map(function (x) { return '<tr><td style="white-space:nowrap">' + fmtDate(x.ts) + '</td><td><a href="#" data-open="' + esc(x.id) + '">' + esc(x.query) + '</a></td><td style="white-space:nowrap">' + stars(x.survey.rating) + '</td><td>' + (x.survey.useful == null ? '—' : x.survey.useful ? tr('yes') : '<b style="color:var(--rose)">' + tr('no') + '</b>') + '</td><td class="muted">' + esc(x.survey.comment || '—') + '</td></tr>'; }).join('') + '</tbody>'
+      : '<tbody><tr><td class="empty">' + tr('fbNone') + '</td></tr></tbody>';
+  }
+
+  // ---------------- Registro ----------------
+  function renderAudit() {
+    var a = S.audit.slice().sort(function (x, y) { return x.at < y.at ? 1 : -1; });
+    var icon = { approved:'fa-circle-check', corrected:'fa-pen', rejected:'fa-ban' };
+    document.getElementById('auditTable').innerHTML = a.length ? '<thead><tr><th>' + tr('when') + '</th><th>' + tr('reviewer') + '</th><th>' + tr('action') + '</th><th>' + tr('item') + '</th><th>' + tr('note') + '</th></tr></thead><tbody>' +
+      a.map(function (x) { return '<tr><td style="white-space:nowrap">' + fmtDate(x.at, true) + '</td><td class="mono" style="white-space:nowrap">' + esc(reviewerName(x.by)) + '</td><td><span class="badge b-' + x.action + '"><i class="fa-solid ' + icon[x.action] + '"></i> ' + tr('s_' + x.action) + '</span></td><td><a href="#" data-open="' + esc(x.id) + '">' + esc(x.query) + '</a></td><td class="muted">' + esc(x.note || '—') + '</td></tr>'; }).join('') + '</tbody>'
+      : '<tbody><tr><td class="empty">' + tr('auditEmpty') + '</td></tr></tbody>';
+  }
+
+  // ---------------- Ajustes ----------------
+  function renderSettings() {
+    document.getElementById('modes').innerHTML = [['post', 'modePostT', 'modePostD', 'fa-forward'], ['pre', 'modePreT', 'modePreD', 'fa-hand']].map(function (m) {
+      return '<label class="mode' + (S.mode === m[0] ? ' on' : '') + '"><b><input type="radio" name="mode" value="' + m[0] + '"' + (S.mode === m[0] ? ' checked' : '') + '> <i class="fa-solid ' + m[3] + '"></i> ' + tr(m[1]) + '</b><p class="muted" style="margin:6px 0 0;font-size:12px">' + tr(m[2]) + '</p></label>';
+    }).join('');
+    document.getElementById('reviewers').innerHTML = '<tr><td class="mono">' + esc(USER || '—') + ' <span class="faint">(' + tr('revYou') + ')</span></td><td><span class="badge b-approved">' + tr('revRole') + '</span></td></tr>';
+  }
+
+  // ---------------- Reporte PDF (con sello de revisión humana) ----------------
+  function openReport(id) {
+    var it = S.items.find(function (x) { return x.id === id; });
+    if (!it) return;
+    var w = window.open('', '_blank');
+    if (!w) return;
+    var rv = it.review;
+    var answer = rv && rv.decision === 'corrected' && rv.corrected ? esc(rv.corrected) : safeAnswer(it.answerHTML);
+    var stamp = rv ? '<div class="stamp ' + rv.decision + '"><b>' + tr('rStamp') + ': ' + tr('s_' + rv.decision) + '</b><br>' + tr('reviewedBy', { u: esc(reviewerName(rv.by)), d: fmtDate(rv.at, true) }) + (rv.note ? '<br><i>' + esc(rv.note) + '</i>' : '') + '</div>'
+      : '<div class="stamp pending"><b>' + tr('rPending') + '</b></div>';
+    var rows = (it.ranking || []).map(function (a, i) { return '<tr><td>' + (i + 1) + '</td><td><b>' + esc(a.name) + '</b></td><td class="num">' + fmtNum(a.vA) + '</td><td class="num">' + fmtNum(a.vB) + '</td><td class="num">' + signed(a.diff) + '</td></tr>'; }).join('');
+    w.document.write('<!doctype html><html lang="' + lang + '"><head><meta charset="utf-8"><title>Climate_Risk_Summary_' + esc(it.variable) + '.pdf</title><style>' +
+      '@page{size:A4;margin:16mm}body{font-family:Arial,Helvetica,sans-serif;color:#0f172a;font-size:11.5px;max-width:180mm;margin:0 auto}' +
+      '.top{border-bottom:3px solid #0f766e;padding-bottom:8px;margin-bottom:12px}.brand{font-size:10px;color:#0f766e;font-weight:700;letter-spacing:.08em;text-transform:uppercase}' +
+      'h1{font-size:20px;margin:4px 0}h2{font-size:13px;margin:16px 0 6px;color:#0f766e}.muted{color:#64748b}.q{background:#f1f5f9;border-left:4px solid #2563eb;padding:8px 10px;border-radius:4px}' +
+      'table{width:100%;border-collapse:collapse;margin-top:6px}th{text-align:left;font-size:9.5px;text-transform:uppercase;color:#475569;border-bottom:1.5px solid #cbd5e1;padding:5px 4px}' +
+      'td{padding:5px 4px;border-bottom:1px solid #eef2f7}.num{text-align:right;font-family:"Courier New",monospace}' +
+      '.stamp{border:2px solid #059669;color:#065f46;background:#ecfdf5;border-radius:8px;padding:8px 10px;margin:10px 0}.stamp.corrected{border-color:#2563eb;color:#1e3a8a;background:#eff6ff}.stamp.rejected{border-color:#e11d48;color:#881337;background:#fff1f2}.stamp.pending{border-color:#d97706;color:#78350f;background:#fffbeb}' +
+      '.note{font-size:9.5px;color:#475569;border-top:1px solid #e2e8f0;margin-top:16px;padding-top:8px;line-height:1.45}.noprint{margin:10px 0}@media print{.noprint{display:none}}' +
+      'button{background:#1d4ed8;color:#fff;border:0;border-radius:6px;padding:7px 12px;font-weight:700;cursor:pointer}</style></head><body>' +
+      '<div class="noprint"><button onclick="print()">' + tr('rPrint') + '</button></div>' +
+      '<div class="top"><div class="brand">SEI · AI Climate Risk Portfolio Explorer</div><h1>' + tr('rTitle') + '</h1><div class="muted">' + fmtDate(it.ts, true) + ' · ' + tr('qid') + ' ' + esc(it.id) + '</div></div>' + stamp +
+      '<h2>' + tr('rQuestion') + '</h2><div class="q">' + esc(it.query) + '</div><h2>' + tr('rAnswer') + '</h2><p>' + answer + '</p>' +
+      '<h2>' + tr('rData') + '</h2><table><tbody><tr><td class="muted">' + tr('variable') + '</td><td><b>' + esc(it.varName || it.variable) + '</b>' + (it.unit ? ' (' + esc(it.unit) + ')' : '') + '</td></tr>' +
+      '<tr><td class="muted">' + tr('scenario') + '</td><td>' + esc(it.scenario) + (it.warming ? ' (+' + it.warming[0] + ' °C / +' + it.warming[1] + ' °C)' : '') + '</td></tr>' +
+      '<tr><td class="muted">' + tr('horizons') + '</td><td>' + esc((it.horizons || []).join(' · ')) + '</td></tr><tr><td class="muted">' + tr('rSource') + '</td><td>Climate Analytics — Climate Impact Explorer (CIE v2)</td></tr></tbody></table>' +
+      '<h2>' + tr('ranking') + '</h2><table><thead><tr><th>#</th><th>' + tr('asset') + '</th><th class="num">' + esc(it.horizons[0]) + '</th><th class="num">' + esc(it.horizons[1]) + '</th><th class="num">Δ</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<div class="note">' + tr('rNote') + '</div></body></html>');
+    w.document.close();
+  }
+
+  // ---------------- Navegación y eventos ----------------
+  function renderAll() {
+    applyStatic();
+    renderOverview(); renderQueue(); renderFeedback(); renderAudit(); renderSettings();
+    ['overview', 'queue', 'feedback', 'audit', 'settings'].forEach(function (v) { document.getElementById('v-' + v).classList.toggle('hidden', v !== view); });
+    document.querySelectorAll('#tabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === view); });
+  }
+  function go(v) { view = v; try { sessionStorage.setItem('ace-admin-tab', v); } catch (e) {} renderAll(); window.scrollTo(0, 0); }
+
+  document.getElementById('tabs').addEventListener('click', function (e) { var b = e.target.closest('button[data-tab]'); if (b) go(b.dataset.tab); });
+  document.getElementById('filters').addEventListener('click', function (e) { var b = e.target.closest('button[data-f]'); if (b) { filter = b.dataset.f; selected = null; renderQueue(); } });
+  document.getElementById('list').addEventListener('click', function (e) { var b = e.target.closest('.item'); if (b) { selected = b.dataset.id; renderQueue(); } });
+  document.addEventListener('click', function (e) {
+    var r = e.target.closest('[data-report]'); if (r) { openReport(r.dataset.report); return; }
+    var o = e.target.closest('[data-open]'); if (o) { e.preventDefault(); selected = o.dataset.open; filter = 'all'; go('queue'); return; }
+    if (e.target.closest('#saveReview')) saveReview();
+  });
+  document.getElementById('detail').addEventListener('change', function (e) {
+    if (e.target.name !== 'dec') return;
+    document.getElementById('catBox').classList.toggle('hidden', e.target.value === 'approved');
+    document.getElementById('corrBox').classList.toggle('hidden', e.target.value !== 'corrected');
+  });
+  document.getElementById('modes').addEventListener('change', function (e) { if (e.target.name === 'mode') { S.mode = e.target.value; saveState(); toast(tr('modeSaved')); renderAll(); } });
+  document.getElementById('reset').addEventListener('click', function () { S = { mode:'post', items:sampleData(), audit:sampleAudit() }; mergeLive(); saveState(); selected = null; toast(tr('resetOk')); renderAll(); });
+  document.getElementById('lang').addEventListener('change', function (e) { lang = e.target.value; set('ace-lang', lang); renderAll(); });
+  document.getElementById('theme').addEventListener('click', function () {
+    var t = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = t; set('ace-theme', t); applyStatic();
+  });
+  // Cerrar sesión: borra la sesión del visor y la de Cloudflare Access
+  document.getElementById('signout').addEventListener('click', function (e) { e.preventDefault(); del('ace-admin'); location.href = '/cdn-cgi/access/logout'; });
+
+  // ---------------- Sesión (Cloudflare Access) ----------------
+  var whoEl = document.getElementById('who');
+  try { view = sessionStorage.getItem('ace-admin-tab') || 'overview'; } catch (e) {}
+  if (['overview', 'queue', 'feedback', 'audit', 'settings'].indexOf(view) < 0) view = 'overview';
+
+  fetch('/cdn-cgi/access/get-identity', { credentials: 'include', cache: 'no-store' })
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+    .then(function (id) {
+      if (!id || !id.email) throw new Error('no email');
+      set('ace-admin', JSON.stringify({ email: id.email, ts: Date.now() }));
+      if (new URLSearchParams(location.search).get('login') === '1') {
+        location.replace('/?admin=welcome'); // vuelve al visor con la ventana de bienvenida
+        return;
+      }
+      USER = id.email; whoEl.textContent = USER; renderAll();
+    })
+    .catch(function () {
       del('ace-admin');
-      location.href = '/cdn-cgi/access/logout';
+      document.documentElement.className = '';
+      whoEl.textContent = tr('noSession'); renderAll();
     });
 
-    // Cloudflare Access entrega aquí la identidad del usuario que inició sesión
-    fetch('/cdn-cgi/access/get-identity', { credentials: 'include', cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
-      .then(function (id) {
-        if (!id || !id.email) throw new Error('no email');
-        set('ace-admin', JSON.stringify({ email: id.email, ts: Date.now() }));
-        if (new URLSearchParams(location.search).get('login') === '1') {
-          who.textContent = L.redirect;
-          location.replace('/?admin=welcome'); // vuelve al visor con la ventana de bienvenida
-        } else {
-          who.textContent = L.signed + id.email;
-        }
-      })
-      .catch(function () { del('ace-admin'); who.textContent = L.none; document.documentElement.className = ''; });
+  mergeLive(); saveState();
+  renderAll();
   </script>
 </body>
 </html>

@@ -2396,6 +2396,7 @@ async function runResponseAgent() {
     await runThinking(box, [t('Combining the query, validated data and retrieved context'), t('Generating the answer with the LLM')], 700);
     const ans = buildAnswerHTML();
     agentState.run.answerHTML = ans.html;
+    saveHitlRecord({ answerHTML: ans.html, ranking: ans.ranking || [] });
     await streamText(box, ans.html);
 
     const meta = agentState.run.meta;
@@ -2506,6 +2507,7 @@ function showEmailForm(btn) {
 function deliverByEmail() {
   const email = document.getElementById('agent-email')?.value.trim();
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { showToast(t('Please enter a valid email address.'), 'error'); return; }
+  saveHitlRecord({ delivery: { channel: 'email', to: maskEmail(email) } });
   const area = document.getElementById('agent-delivery-area');
   area.innerHTML = `<p class="text-emerald-400 text-[10px]"><i class="fa-solid fa-circle-check"></i> ${t('Report {f} queued for {e}.', { f: escapeHtml(reportFileName()), e: escapeHtml(email) })}</p>
     <p class="text-slate-500 text-[9px]">${t('Demonstration: no email is actually sent.')}</p>`;
@@ -2514,6 +2516,7 @@ function deliverByEmail() {
 
 function deliverByDownload() {
   openAgentReport();
+  saveHitlRecord({ delivery: { channel: 'download' } });
   const area = document.getElementById('agent-delivery-area');
   area.innerHTML = `<p class="text-emerald-400 text-[10px]"><i class="fa-solid fa-circle-check"></i> ${t('Report opened. Use "Save as PDF" to store it on your device.')}</p>`;
   askSatisfactionSurvey();
@@ -2557,6 +2560,7 @@ function setSurveyUseful(btn, value) {
 
 function submitSurvey() {
   if (!surveyState.rating) { showToast(t('Please select a rating from 1 to 5 stars.'), 'error'); return; }
+  saveHitlRecord({ survey: { rating: surveyState.rating, useful: surveyState.useful, comment: (document.getElementById('agent-comment')?.value || '').trim().slice(0, 500) } });
   const survey = document.getElementById('agent-survey');
   if (survey) survey.innerHTML = `<p class="text-emerald-400 text-[10px]"><i class="fa-solid fa-heart"></i> ${t('Thank you! Your rating ({r}/5) helps us evaluate and improve the agents (human-in-the-loop).', { r: surveyState.rating })}</p>`;
   agentState.done = true;
@@ -2740,4 +2744,43 @@ function adminSignOut() {
   storageRemove(ADMIN_SESSION_KEY);
   adminSession = null;
   location.href = '/cdn-cgi/access/logout';
+}
+
+
+// =========================================================================
+// 20. ENVÍO A LA COLA DE REVISIÓN HUMANA (PROTOTIPO)
+// -------------------------------------------------------------------------
+// Cada flujo de agentes se guarda en este navegador ('ace-hitl-runs') para que
+// la página de administración (/admin/) lo muestre en la cola de revisión.
+// Prototipo: no se envía nada a ningún servidor. El correo se guarda enmascarado.
+// =========================================================================
+const HITL_KEY = 'ace-hitl-runs';
+
+function maskEmail(e) {
+  const [u, d] = String(e).split('@');
+  return d ? `${u.charAt(0)}***@${d}` : '***';
+}
+
+function saveHitlRecord(patch) {
+  try {
+    const r = agentState.run;
+    if (!r || !r.payload) return;
+    const id = r.payload.query_id;
+    const all = JSON.parse(storageGet(HITL_KEY) || '[]').filter(x => x && x.id);
+    let rec = all.find(x => x.id === id);
+    if (!rec) {
+      const meta = r.meta || {};
+      rec = {
+        id, ts: r.startedAt.toISOString(), lang: currentLang, origin: 'live', status: 'pending',
+        query: r.query, variable: r.variable, varName: meta.name, unit: meta.unit || '', worse: meta.worse || 'high',
+        scenario: r.source === 'cie_api' ? r.sc.A.note : t(SOURCES[r.source].label),
+        warming: r.wl ? [r.wl.A, r.wl.B] : null, horizons: [r.sc.A.short, r.sc.B.short],
+        payload: r.payload, delivery: null, survey: null
+      };
+      all.unshift(rec);
+    }
+    if (patch.ranking) patch.ranking = patch.ranking.map(a => ({ name: a.name, vA: a.vA, vB: a.vB, diff: a.diff, tier: a.tier || 'NA' }));
+    Object.assign(rec, patch);
+    storageSet(HITL_KEY, JSON.stringify(all.slice(0, 30)));
+  } catch { /* la demostración del chat sigue funcionando aunque no se pueda guardar */ }
 }
