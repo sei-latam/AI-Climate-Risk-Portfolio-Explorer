@@ -211,6 +211,7 @@ const BASEMAPS_3D = {
 document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
   initLanguage();
+  initAdminSession();
   initClock();
   initLeaflet();
   initOpacitySlider();
@@ -2622,6 +2623,7 @@ function refreshDynamicUI() {
     if (a) document.getElementById('cesium-popup-content').innerHTML = assetPopupHTML(a);
   } else cerrarCesiumPopup();
   leafletMap?.closePopup();
+  renderAdminSession();
 }
 
 function isLightTheme() { return document.documentElement.dataset.theme === 'light'; }
@@ -2639,4 +2641,103 @@ function applyTheme(theme, rerender = true) {
   const btn = document.getElementById('theme-toggle');
   if (btn) btn.title = t(theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme');
   if (rerender) { renderPortfolio(); renderLegend(); }
+}
+
+
+// =========================================================================
+// 19. SESIÓN DE ADMINISTRACIÓN (Cloudflare Access · solo correos @sei.org)
+// -------------------------------------------------------------------------
+// La protección real la hace Cloudflare Access sobre /admin. Esta parte solo
+// muestra en el encabezado quién inició sesión. Flujo:
+//   Administration → /admin/?login=1 → login Cloudflare → /admin/ guarda la
+//   sesión y vuelve a /?admin=welcome → aquí se muestra la ventana de bienvenida.
+// =========================================================================
+const ADMIN_SESSION_KEY = 'ace-admin';
+const ADMIN_SESSION_MAX_MS = 24 * 60 * 60 * 1000; // igual a la sesión de Access (24 h)
+let adminSession = null;
+
+function storageRemove(k) { try { localStorage.removeItem(k); } catch { /* modo privado */ } }
+
+function readAdminSession() {
+  try {
+    const s = JSON.parse(storageGet(ADMIN_SESSION_KEY) || 'null');
+    if (s && typeof s.email === 'string' && s.email && Date.now() - (s.ts || 0) < ADMIN_SESSION_MAX_MS) return s;
+  } catch { /* dato corrupto */ }
+  storageRemove(ADMIN_SESSION_KEY);
+  return null;
+}
+
+async function initAdminSession() {
+  adminSession = readAdminSession();
+  renderAdminSession();
+
+  const params = new URLSearchParams(location.search);
+  if (params.get('admin') === 'welcome') {
+    params.delete('admin');
+    const qs = params.toString();
+    history.replaceState(null, '', location.pathname + (qs ? `?${qs}` : '') + location.hash);
+    if (adminSession) showAdminWelcome();
+  }
+
+  // Si Cloudflare entrega la identidad también aquí, se refresca (si no, se usa la guardada)
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000);
+    const r = await fetch('/cdn-cgi/access/get-identity', { credentials: 'include', cache: 'no-store', signal: ctrl.signal });
+    clearTimeout(timer);
+    if (r.ok && (r.headers.get('content-type') || '').includes('json')) {
+      const id = await r.json();
+      if (id && typeof id.email === 'string' && id.email) {
+        adminSession = { email: id.email, ts: adminSession?.ts || Date.now() };
+        storageSet(ADMIN_SESSION_KEY, JSON.stringify(adminSession));
+        renderAdminSession();
+      }
+    }
+  } catch { /* sin conexión con Access: se mantiene la sesión guardada */ }
+}
+
+function renderAdminSession() {
+  const loginBtn = document.getElementById('admin-login-btn');
+  const box = document.getElementById('admin-session');
+  if (!loginBtn || !box) return;
+  if (!adminSession) {
+    box.classList.add('hidden'); box.classList.remove('flex');
+    loginBtn.classList.remove('hidden');
+    box.innerHTML = '';
+    return;
+  }
+  loginBtn.classList.add('hidden');
+  box.classList.remove('hidden'); box.classList.add('flex');
+  const email = escapeAdminHTML(adminSession.email);
+  box.innerHTML = `
+    <a href="/admin/" title="${t('Go to the administration page')}" class="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-[#0f172a]/50 transition-all no-underline">
+      <i class="fa-solid fa-user-check text-[10px] text-emerald-400"></i>
+      <span class="text-[11px] font-mono text-slate-200 truncate max-w-[170px]">${email}</span>
+    </a>
+    <button onclick="adminSignOut()" class="flex items-center gap-1 whitespace-nowrap px-2 py-1 rounded-lg text-[11px] font-bold text-rose-400 hover:bg-[#0f172a]/50 transition-all">
+      <i class="fa-solid fa-right-from-bracket text-[10px]"></i> ${t('Sign out')}
+    </button>`;
+}
+
+function escapeAdminHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function showAdminWelcome() {
+  const modal = document.getElementById('admin-welcome-modal');
+  if (!modal || !adminSession) return;
+  document.getElementById('welcome-modal')?.classList.add('hidden'); // no se apilan dos ventanas
+  const em = document.getElementById('admin-welcome-email');
+  if (em) em.textContent = adminSession.email;
+  modal.classList.remove('hidden');
+}
+
+function closeAdminWelcome() {
+  document.getElementById('admin-welcome-modal')?.classList.add('hidden');
+}
+
+function adminSignOut() {
+  storageRemove(ADMIN_SESSION_KEY);
+  adminSession = null;
+  location.href = '/cdn-cgi/access/logout';
 }

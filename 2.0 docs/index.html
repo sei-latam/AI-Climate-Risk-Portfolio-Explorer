@@ -46,9 +46,12 @@
                 </button>
             </div>
             <div class="hidden lg:flex items-center border-l border-r border-slate-800 px-2">
-                <a href="https://dash.cloudflare.com/login" target="_blank" class="px-3 py-1.5 rounded-lg text-[12px] font-bold text-white hover:bg-[#0f172a]/50 transition-all no-underline flex items-center gap-1.5">
+                <!-- Sin sesión: lleva al login de Cloudflare Access (solo @sei.org) -->
+                <a id="admin-login-btn" href="/admin/?login=1" class="px-3 py-1.5 rounded-lg text-[12px] font-bold text-white hover:bg-[#0f172a]/50 transition-all no-underline flex items-center gap-1.5">
                     <i class="fas fa-sign-in-alt text-[10px]"></i> Administration
                 </a>
+                <!-- Con sesión: correo del usuario + cerrar sesión (lo pinta geovisor.js) -->
+                <div id="admin-session" data-no-i18n class="hidden items-center gap-2"></div>
             </div>
           <div class="flex items-center gap-2 tracking-tight">
             <select id="lang-selector" class="bg-[#0f172a]/50 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 outline-none">
@@ -380,7 +383,7 @@
     </div>
   </div>
 
-  <div id="consultas-panel-body" class="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar hidden">
+  <div id="consultas-panel-body" class="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
 
     <!-- 1. PORTFOLIO METRICS -->
     <div class="bg-slate-950/40 border border-slate-800/80 rounded-xl overflow-hidden transition-all">
@@ -606,6 +609,36 @@
       <button onclick="document.getElementById('welcome-modal').classList.add('hidden')" class="px-6 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg shadow-lg transition-all flex items-center gap-2">
         <i class="fa-solid fa-check text-xs"></i> Accept
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DE BIENVENIDA PARA USUARIOS DE SEI (tras iniciar sesión en Administration) -->
+<div id="admin-welcome-modal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+  <div class="bg-slate-900 text-slate-200 border border-slate-700 rounded-xl shadow-2xl max-w-lg w-full flex flex-col overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-800 flex items-center gap-3 bg-slate-950/50">
+      <img src="logo-inst1.png" alt="Institutional Logo" class="h-8 w-auto object-contain">
+      <div class="h-6 w-[1px] bg-slate-700"></div>
+      <div>
+        <h2 class="text-base font-bold text-white tracking-wide leading-none">Welcome to the administration area</h2>
+        <p class="text-[11px] text-slate-400 font-medium mt-0.5">AI Climate Risk Portfolio Explorer</p>
+      </div>
+    </div>
+    <div class="p-6 space-y-3 text-sm leading-relaxed text-slate-300">
+      <div class="bg-slate-800/50 p-2.5 rounded-lg border-l-4 border-emerald-500 text-xs flex items-center gap-2">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span>You are signed in as</span>
+        <span id="admin-welcome-email" data-no-i18n class="font-mono font-bold text-white"></span>
+      </div>
+      <p class="text-xs">Your SEI account has been verified. You now have access to the administration page of the tool.</p>
+    </div>
+    <div class="px-6 py-4 border-t border-slate-800 bg-slate-950/50 flex justify-end gap-3">
+      <button onclick="closeAdminWelcome()" class="whitespace-nowrap px-4 py-2 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors border border-slate-700/50">
+        Stay in the explorer
+      </button>
+      <a href="/admin/" class="whitespace-nowrap px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg shadow-lg transition-all flex items-center gap-2 no-underline">
+        <i class="fa-solid fa-shield-halved text-xs"></i> Go to the administration page
+      </a>
     </div>
   </div>
 </div>

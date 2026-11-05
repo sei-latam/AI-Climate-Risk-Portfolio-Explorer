@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
   <title>Administration · AI Climate Risk Portfolio Explorer</title>
+  <link rel="icon" type="image/png" href="../logo-inst3.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     :root { --bg:#0b1220; --card:#0f172a; --line:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --accent:#2563eb; --ok:#34d399; }
@@ -21,26 +22,63 @@
     .user i { color:var(--ok); }
     .row { display:flex; gap:10px; }
     a.btn { flex:1; text-align:center; text-decoration:none; font-size:13px; font-weight:700;
-            padding:10px; border-radius:8px; color:#fff; background:var(--accent); }
+            padding:10px; border-radius:8px; color:#fff; background:var(--accent); cursor:pointer; }
     a.btn.ghost { background:transparent; border:1px solid var(--line); color:var(--text); }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1><i class="fas fa-shield-halved"></i> Administration</h1>
-    <p>Restricted area for SEI administrators and staff.</p>
+    <h1><i class="fas fa-shield-halved"></i> <span id="t-title">Administration</span></h1>
+    <p id="t-sub">Restricted area for SEI administrators and staff.</p>
     <div class="user"><i class="fas fa-circle-check"></i> <span id="who">Checking session…</span></div>
     <div class="row">
-      <a class="btn ghost" href="/"><i class="fas fa-map"></i> Back to explorer</a>
-      <a class="btn" href="/cdn-cgi/access/logout"><i class="fas fa-right-from-bracket"></i> Sign out</a>
+      <a class="btn ghost" href="/"><i class="fas fa-map"></i> <span id="t-back">Back to explorer</span></a>
+      <a class="btn" id="signout"><i class="fas fa-right-from-bracket"></i> <span id="t-out">Sign out</span></a>
     </div>
   </div>
   <script>
-    // Cloudflare Access exposes the signed-in user's identity on this endpoint.
-    fetch('/cdn-cgi/access/get-identity', { credentials: 'include' })
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then(id => { document.getElementById('who').textContent = 'Signed in as ' + (id.email || 'unknown'); })
-      .catch(() => { document.getElementById('who').textContent = 'No active session'; });
+    // Textos en el idioma elegido en el visor (misma clave 'ace-lang')
+    var TXT = {
+      en: { title: 'Administration', sub: 'Restricted area for SEI administrators and staff.', back: 'Back to explorer', out: 'Sign out',
+            checking: 'Checking session…', signed: 'Signed in as ', none: 'No active session', redirect: 'Signed in. Returning to the explorer…' },
+      es: { title: 'Administración', sub: 'Área restringida para administradores y personal de SEI.', back: 'Volver al visor', out: 'Cerrar sesión',
+            checking: 'Verificando sesión…', signed: 'Sesión iniciada como ', none: 'Sin sesión activa', redirect: 'Sesión iniciada. Volviendo al visor…' },
+      pt: { title: 'Administração', sub: 'Área restrita para administradores e equipe do SEI.', back: 'Voltar ao visualizador', out: 'Sair',
+            checking: 'Verificando sessão…', signed: 'Conectado como ', none: 'Nenhuma sessão ativa', redirect: 'Sessão iniciada. Voltando ao visualizador…' }
+    };
+    function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+    function del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+
+    var L = TXT[get('ace-lang')] || TXT.en;
+    document.documentElement.lang = TXT[get('ace-lang')] ? get('ace-lang') : 'en';
+    document.getElementById('t-title').textContent = L.title;
+    document.getElementById('t-sub').textContent = L.sub;
+    document.getElementById('t-back').textContent = L.back;
+    document.getElementById('t-out').textContent = L.out;
+    var who = document.getElementById('who');
+    who.textContent = L.checking;
+
+    // Cerrar sesión: borra la sesión del visor y la de Cloudflare Access
+    document.getElementById('signout').addEventListener('click', function () {
+      del('ace-admin');
+      location.href = '/cdn-cgi/access/logout';
+    });
+
+    // Cloudflare Access entrega aquí la identidad del usuario que inició sesión
+    fetch('/cdn-cgi/access/get-identity', { credentials: 'include', cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function (id) {
+        if (!id || !id.email) throw new Error('no email');
+        set('ace-admin', JSON.stringify({ email: id.email, ts: Date.now() }));
+        if (new URLSearchParams(location.search).get('login') === '1') {
+          who.textContent = L.redirect;
+          location.replace('/?admin=welcome'); // vuelve al visor con la ventana de bienvenida
+        } else {
+          who.textContent = L.signed + id.email;
+        }
+      })
+      .catch(function () { del('ace-admin'); who.textContent = L.none; });
   </script>
 </body>
 </html>

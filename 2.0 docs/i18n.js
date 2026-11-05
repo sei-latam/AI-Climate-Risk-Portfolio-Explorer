@@ -923,6 +923,25 @@ const I18N_ONLINE = {
     'Workflow completed. Ask a new question to start again.': 'Fluxo concluído. Faça uma nova pergunta para começar de novo.'
   }
 };
+// Sesión de administración (Cloudflare Access · solo @sei.org)
+Object.assign(I18N_ONLINE.es, {
+  'Sign out': 'Cerrar sesión',
+  'Go to the administration page': 'Ir a la página de administración',
+  'Administration area': 'Área de administración',
+  'Welcome to the administration area': 'Bienvenido al área de administración',
+  'You are signed in as': 'Iniciaste sesión como',
+  'Your SEI account has been verified. You now have access to the administration page of the tool.': 'Tu cuenta de SEI fue verificada. Ahora tienes acceso a la página de administración de la herramienta.',
+  'Stay in the explorer': 'Seguir en el visor'
+});
+Object.assign(I18N_ONLINE.pt, {
+  'Sign out': 'Sair',
+  'Go to the administration page': 'Ir para a página de administração',
+  'Administration area': 'Área de administração',
+  'Welcome to the administration area': 'Bem-vindo à área de administração',
+  'You are signed in as': 'Você entrou como',
+  'Your SEI account has been verified. You now have access to the administration page of the tool.': 'Sua conta do SEI foi verificada. Agora você tem acesso à página de administração da ferramenta.',
+  'Stay in the explorer': 'Continuar no visualizador'
+});
 Object.assign(I18N.es, I18N_ONLINE.es);
 Object.assign(I18N.pt, I18N_ONLINE.pt);
 

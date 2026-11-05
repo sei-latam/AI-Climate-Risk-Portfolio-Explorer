@@ -132,7 +132,7 @@ html[data-theme="light"] [class~="text-red-400"] { color: #dc2626 !important; }
 html[data-theme="light"] [class~="text-emerald-200"] { color: #065f46 !important; }
 html[data-theme="light"] .custom-scrollbar::-webkit-scrollbar-track { background: #e2e8f0; }
 html[data-theme="light"] .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; }
-html[data-theme="light"] #welcome-modal > div, html[data-theme="light"] #about-modal > div { background-color: #ffffff !important; }
+html[data-theme="light"] #welcome-modal > div, html[data-theme="light"] #about-modal > div, html[data-theme="light"] #admin-welcome-modal > div { background-color: #ffffff !important; }
 html[data-theme="light"] header { box-shadow: 0 10px 25px -10px rgba(15,23,42,0.25) !important; }
 html[data-theme="light"] .leaflet-container { background: #e5e7eb; }
 html[data-theme="light"] :is([class^="bg-sky-950"], [class*=" bg-sky-950"], [class^="bg-amber-950"], [class*=" bg-amber-950"], [class^="bg-emerald-950"], [class*=" bg-emerald-950"], [class^="bg-violet-950"], [class*=" bg-violet-950"]) { background-color: #f1f5f9 !important; }
