@@ -212,6 +212,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
   initLanguage();
   initAdminSession();
+  checkAceApi();
   initClock();
   initLeaflet();
   initOpacitySlider();
@@ -2086,7 +2087,7 @@ function addAgentBubble(n) {
       <div class="bg-slate-900/90 border border-slate-800 p-3 rounded-2xl rounded-tl-none max-w-[90%] w-full text-slate-200 text-[11px] leading-relaxed space-y-2.5 shadow-lg">
         <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-1.5">
           <span class="text-[10px] font-bold ${a.color} flex items-center gap-1"><i class="fa-solid fa-microchip"></i> ${t('Agent {n}', { n })}: ${t(a.name)}</span>
-          <span class="text-[9px] text-slate-500 font-mono">${t('simulated')}</span>
+          <span data-agent-badge class="text-[9px] ${aceApi.online ? 'text-emerald-400' : 'text-slate-500'} font-mono">${aceApi.online ? (n === 3 ? 'LLM' : t('live')) : t('simulated')}</span>
         </div>
         <div id="${id}" class="space-y-2.5"></div>
       </div>
@@ -2179,7 +2180,9 @@ function renderAgentIntro() {
       <div class="bg-slate-900/90 border border-slate-800 p-3 rounded-2xl rounded-tl-none max-w-[90%] text-slate-300 text-[11px] leading-relaxed space-y-2">
         <p class="text-slate-100 font-bold">${t('Hello! I am the AI Climate Risk assistant.')}</p>
         <p>${t('Ask a question about the assets and climate variables on the map. Four agents will select the data, assess the risk, answer with a PDF report and handle delivery and feedback.')}</p>
-        <p class="text-slate-500 text-[10px]">${t('Demonstration: responses are simulated, but they use the real CIE v2 data shown in the platform.')}</p>
+        <p class="text-[10px] ${aceApi.online ? 'text-emerald-400' : 'text-slate-500'}">${aceApi.online
+          ? '<i class="fa-solid fa-circle-check"></i> ' + t("Live: answers are written by an open-source LLM running on SEI's server and checked against the real CIE v2 data. SEI specialists review them (human-in-the-loop).")
+          : t('Demonstration: responses are simulated, but they use the real CIE v2 data shown in the platform.')}</p>
         <div class="flex flex-col gap-1.5 pt-1">
           ${EXAMPLE_QUERIES.map((q, i) => `<button onclick="useExampleQuery(${i})" class="text-left px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-950/60 hover:border-blue-500/60 hover:text-white text-[10px] text-slate-300 transition-colors"><i class="fa-regular fa-lightbulb text-amber-400 mr-1"></i>${escapeHtml(t(q))}</button>`).join('')}
         </div>
@@ -2345,12 +2348,14 @@ async function runRiskAssessmentAgent() {
       ]) +
       `<div><p class="text-[10px] text-slate-400 mb-1"><i class="fa-solid fa-code text-amber-400"></i> ${t('Machine-readable payload sent to the RAG and LLM:')}</p>
         <pre class="p-2 bg-slate-950/90 border border-slate-800 rounded-lg text-[9px] leading-snug text-emerald-300 font-mono max-h-28 overflow-auto custom-scrollbar">${escapeHtml(json)}</pre></div>` +
-      `<div><p class="text-[10px] text-slate-400 mb-1"><i class="fa-solid fa-book text-amber-400"></i> ${t('Context retrieved from the knowledge base (simulated):')}</p>` +
-      kvCard([
-        [t('CIE v2 indicator documentation'), 'sim. 0.92', 'text-blue-400'],
-        [t('IPCC AR6 WGI, Chapter 11: weather and climate extremes'), 'sim. 0.87', 'text-blue-400'],
-        [t('Portfolio climate-risk screening guidelines'), 'sim. 0.81', 'text-blue-400']
-      ]) + `</div>` +
+      (aceApi.online
+        ? `<p class="text-[10px] text-slate-400"><i class="fa-solid fa-book text-amber-400"></i> ${t('The SEI knowledge base (RAG) is queried on the server when the answer is generated.')}</p>`
+        : `<div><p class="text-[10px] text-slate-400 mb-1"><i class="fa-solid fa-book text-amber-400"></i> ${t('Context retrieved from the knowledge base (simulated):')}</p>` +
+          kvCard([
+            [t('CIE v2 indicator documentation'), 'sim. 0.92', 'text-blue-400'],
+            [t('IPCC AR6 WGI, Chapter 11: weather and climate extremes'), 'sim. 0.87', 'text-blue-400'],
+            [t('Portfolio climate-risk screening guidelines'), 'sim. 0.81', 'text-blue-400']
+          ]) + `</div>`) +
       nextButton(t('Generate response and report'), 'runResponseAgent()'));
     scrollChat();
   } finally {
@@ -2393,11 +2398,23 @@ async function runResponseAgent() {
   updateStepButtons();
   try {
     const box = addAgentBubble(3);
+    const apiCall = aceApi.online ? callAceAgents(agentState.run) : Promise.resolve(null);
     await runThinking(box, [t('Combining the query, validated data and retrieved context'), t('Generating the answer with the LLM')], 700);
-    const ans = buildAnswerHTML();
+    const api = await apiCall;
+    let ans;
+    if (api) {
+      agentState.run.api = api;
+      ans = { html: apiAnswerHTML(api), ranking: rankAssets(runAssets(), 'B') };
+      const badge = box.parentElement.querySelector('[data-agent-badge]');
+      if (badge) badge.textContent = api.model === 'template' ? t('verified data') : api.model;
+    } else {
+      ans = buildAnswerHTML();
+      if (aceApi.online) ans.html = `<span class="text-amber-300 text-[10px]"><i class="fa-solid fa-triangle-exclamation"></i> ${t('The AI server did not respond. This is a demonstration answer.')}</span> ` + ans.html;
+    }
     agentState.run.answerHTML = ans.html;
     saveHitlRecord({ answerHTML: ans.html, ranking: ans.ranking || [] });
     await streamText(box, ans.html);
+    if (api) box.insertAdjacentHTML('beforeend', apiMetaHTML(api));
 
     const meta = agentState.run.meta;
     const rows = (ans.ranking || []).slice(0, 5).map((a, i) => `<tr class="border-t border-slate-800/60"><td class="py-0.5 pr-2 text-slate-500">${i + 1}</td><td class="py-0.5 pr-2 text-slate-200">${escapeHtml(a.name)}</td><td class="py-0.5 pr-2 text-right">${fmtNum(a.vA)}</td><td class="py-0.5 pr-2 text-right text-amber-300">${fmtNum(a.vB)}</td><td class="py-0.5 text-right ${a.diff != null && isWorse(a.diff, meta) ? 'text-rose-400' : 'text-emerald-400'}">${a.diff == null ? '—' : (a.diff > 0 ? '+' : '') + fmtNum(a.diff)}</td></tr>`).join('');
@@ -2450,7 +2467,7 @@ function openAgentReport() {
   <div class="noprint"><button onclick="print()">${t('Save as PDF / Print')}</button></div>
   <div class="top"><div class="brand">SEI · AI Climate Risk Portfolio Explorer</div>
     <h1>${t('Climate risk summary report')}</h1>
-    <div class="muted">${escapeHtml(date)} · ${t('Generated by the AI agents (demonstration)')}</div></div>
+    <div class="muted">${escapeHtml(date)} · ${r.api ? t('Generated by the AI agents (open-source LLM: {m})', { m: escapeHtml(r.api.model === 'template' ? t('verified data') : r.api.model) }) : t('Generated by the AI agents (demonstration)')}</div></div>
   <h2>${t('Question')}</h2><div class="q">${escapeHtml(r.query)}</div>
   <h2>${t('Answer')}</h2><p>${r.answerHTML || ''}</p>
   <h2>${t('Data used')}</h2>
@@ -2462,7 +2479,7 @@ function openAgentReport() {
   </tbody></table>
   <h2>${t('Ranking of locations')}</h2>
   <table><thead><tr><th>#</th><th>${t('Asset')}</th><th class="num">${escapeHtml(sc.A.short)}</th><th class="num">${escapeHtml(sc.B.short)}</th><th class="num">Δ</th><th>${t('Relative tier')}</th></tr></thead><tbody>${rows}</tbody></table>
-  <div class="note">${t('This report was produced by a demonstration of the AI agent workflow. The answer text is simulated; the values come from CIE v2 as shown in the platform. Values are changes relative to the CIE reference period at ~55 km resolution and describe climate hazard, not financial losses.')}</div>
+  <div class="note">${r.api ? t('This report was produced by the AI agent workflow: an open-source LLM wrote the text from verified CIE v2 values, and SEI specialists may review it. Values are changes relative to the CIE reference period at ~55 km resolution and describe climate hazard, not financial losses.') + ` (ID: ${escapeHtml(r.api.run_id)})` : t('This report was produced by a demonstration of the AI agent workflow. The answer text is simulated; the values come from CIE v2 as shown in the platform. Values are changes relative to the CIE reference period at ~55 km resolution and describe climate hazard, not financial losses.')}</div>
   <script>window.addEventListener('load', () => setTimeout(() => window.print(), 400));<\/script>
 </body></html>`);
   w.document.close();
@@ -2508,6 +2525,7 @@ function deliverByEmail() {
   const email = document.getElementById('agent-email')?.value.trim();
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { showToast(t('Please enter a valid email address.'), 'error'); return; }
   saveHitlRecord({ delivery: { channel: 'email', to: maskEmail(email) } });
+  postAce(`/v1/runs/${agentState.run?.api?.run_id}/delivery`, { channel: 'email', to: email });
   const area = document.getElementById('agent-delivery-area');
   area.innerHTML = `<p class="text-emerald-400 text-[10px]"><i class="fa-solid fa-circle-check"></i> ${t('Report {f} queued for {e}.', { f: escapeHtml(reportFileName()), e: escapeHtml(email) })}</p>
     <p class="text-slate-500 text-[9px]">${t('Demonstration: no email is actually sent.')}</p>`;
@@ -2517,6 +2535,7 @@ function deliverByEmail() {
 function deliverByDownload() {
   openAgentReport();
   saveHitlRecord({ delivery: { channel: 'download' } });
+  postAce(`/v1/runs/${agentState.run?.api?.run_id}/delivery`, { channel: 'download' });
   const area = document.getElementById('agent-delivery-area');
   area.innerHTML = `<p class="text-emerald-400 text-[10px]"><i class="fa-solid fa-circle-check"></i> ${t('Report opened. Use "Save as PDF" to store it on your device.')}</p>`;
   askSatisfactionSurvey();
@@ -2560,7 +2579,9 @@ function setSurveyUseful(btn, value) {
 
 function submitSurvey() {
   if (!surveyState.rating) { showToast(t('Please select a rating from 1 to 5 stars.'), 'error'); return; }
-  saveHitlRecord({ survey: { rating: surveyState.rating, useful: surveyState.useful, comment: (document.getElementById('agent-comment')?.value || '').trim().slice(0, 500) } });
+  const surveyComment = (document.getElementById('agent-comment')?.value || '').trim().slice(0, 500);
+  saveHitlRecord({ survey: { rating: surveyState.rating, useful: surveyState.useful, comment: surveyComment } });
+  postAce(`/v1/runs/${agentState.run?.api?.run_id}/feedback`, { rating: surveyState.rating, useful: surveyState.useful, comment: surveyComment });
   const survey = document.getElementById('agent-survey');
   if (survey) survey.innerHTML = `<p class="text-emerald-400 text-[10px]"><i class="fa-solid fa-heart"></i> ${t('Thank you! Your rating ({r}/5) helps us evaluate and improve the agents (human-in-the-loop).', { r: surveyState.rating })}</p>`;
   agentState.done = true;
@@ -2783,4 +2804,101 @@ function saveHitlRecord(patch) {
     Object.assign(rec, patch);
     storageSet(HITL_KEY, JSON.stringify(all.slice(0, 30)));
   } catch { /* la demostración del chat sigue funcionando aunque no se pueda guardar */ }
+}
+
+
+// =========================================================================
+// 21. CONEXIÓN CON EL SERVIDOR DE IA (VM con LLM open source vía Cloudflare Tunnel)
+// -------------------------------------------------------------------------
+// Si el servidor responde, el Agente 3 usa el LLM real (granite3.3 / phi4-mini)
+// y todo queda guardado para la revisión humana. Si no responde, el panel sigue
+// funcionando en modo demostración (sin errores para el usuario).
+// =========================================================================
+const ACE_API = 'https://api.ai-climate-risk-portfolio-explorer.org';
+const aceApi = { online: false, checked: false };
+
+async function checkAceApi() {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 6000);
+    const r = await fetch(`${ACE_API}/health`, { cache: 'no-store', signal: ctrl.signal });
+    clearTimeout(timer);
+    const j = await r.json();
+    aceApi.online = r.ok && j.status === 'ok';
+  } catch { aceApi.online = false; }
+  aceApi.checked = true;
+  if (agentState.step === 0) renderAgentIntro();
+}
+
+function aceRequestBody(r) {
+  const ids = r.assetIds || [];
+  const assets = state.assets.filter(a => ids.includes(a.id)).slice(0, 200).map(a => ({
+    name: String(a.name).slice(0, 80),
+    a: a.vA == null ? null : +Number(a.vA).toFixed(4),
+    b: a.vB == null ? null : +Number(a.vB).toFixed(4)
+  }));
+  const wl = r.source === 'cie_api' && r.wl && r.wl.A != null && r.wl.B != null ? [Number(r.wl.A), Number(r.wl.B)] : null;
+  return {
+    query_id: r.payload?.query_id || null,
+    question: String(r.query || '').slice(0, 500),
+    lang: currentLang,
+    variable: r.variable,
+    variable_name: String(r.meta?.name || r.variable).slice(0, 80),
+    unit: String(r.meta?.unit || '').slice(0, 20),
+    higher_is_worse: r.meta?.worse !== 'low',
+    scenario: (r.source === 'cie_api' ? String(r.sc.A.note) : `GWL ${r.sc.A.short} / ${r.sc.B.short}`).slice(0, 40),
+    warming: wl,
+    horizons: [String(r.sc.A.short), String(r.sc.B.short)],
+    source: r.source,
+    assets
+  };
+}
+
+async function callAceAgents(run) {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 75000);
+    const r = await fetch(`${ACE_API}/v1/agents/run`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(aceRequestBody(run)), signal: ctrl.signal
+    });
+    clearTimeout(timer);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json();
+    return j && j.answer ? j : null;
+  } catch (e) {
+    console.warn('ACE API no disponible, se usa el modo demostración:', e);
+    return null;
+  }
+}
+
+function postAce(path, body) {
+  if (!aceApi.online || path.includes('/undefined/')) return;
+  fetch(`${ACE_API}${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .catch(() => { /* no bloquea al usuario */ });
+}
+
+function apiAnswerHTML(api) {
+  const p = api.parts || {};
+  const out = [];
+  if (api.status === 'fallback' && api.model === 'template') {
+    out.push(`<span class="text-amber-300 text-[10px]"><i class="fa-solid fa-shield-halved"></i> ${t('The LLM text did not pass verification; showing the verified data summary. It has been flagged for SEI review.')}</span>`);
+  }
+  if (p.finding) out.push(escapeHtml(p.finding));
+  if (p.context) out.push(escapeHtml(p.context));
+  if (p.lower_is_worse) out.push(escapeHtml(p.lower_is_worse));
+  if (p.scope_note) out.push(`<span class="text-amber-300">${escapeHtml(p.scope_note)}</span>`);
+  if (p.recommendation) out.push(`<span class="text-sky-300">${escapeHtml(p.recommendation)}</span>`);
+  if (p.caveat) out.push(`<span class="text-slate-500 text-[10px]">${escapeHtml(p.caveat)}</span>`);
+  return out.join(' ');
+}
+
+function apiMetaHTML(api) {
+  const src = (api.sources || []).length
+    ? `<p class="text-[10px] text-slate-400"><i class="fa-solid fa-book text-amber-400"></i> ${t('Sources from the knowledge base:')} ${api.sources.map(s => escapeHtml(s.title + (s.source ? ` (${s.source})` : ''))).join('; ')}</p>`
+    : `<p class="text-[10px] text-slate-500"><i class="fa-solid fa-book"></i> ${t('No knowledge-base passages were used for this answer.')}</p>`;
+  const flagged = api.status === 'flagged' || api.status === 'fallback'
+    ? `<p class="text-[10px] text-amber-300"><i class="fa-solid fa-user-shield"></i> ${t('This answer has been flagged for review by SEI specialists.')}</p>` : '';
+  const model = api.model === 'template' ? t('verified data') : api.model;
+  return src + flagged + `<p class="text-[9px] text-slate-500 font-mono"><i class="fa-solid fa-circle-check text-emerald-400"></i> ${t('Model: {m} · verified against the data · {s} s', { m: escapeHtml(model), s: (api.latency_ms / 1000).toFixed(1) })} · ID ${escapeHtml(api.run_id)}</p>`;
 }
