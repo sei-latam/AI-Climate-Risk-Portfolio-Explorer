@@ -1,240 +1,75 @@
 # AI Climate Risk Portfolio Explorer
 
 <p align="center">
-  <img src="https://github.com/sei-latam/AI-Climate-Explorer/blob/main/1.0%20Architecture/AI%20TF%20Climate%20Explorer.gif" alt="AI Climate Explorer banner" width="100%" />
+  <img src="1.0%20Architecture/AI%20TF%20Climate%20Explorer.gif" alt="AI Climate Risk Portfolio Explorer architecture and workflow" width="100%" />
 </p>
 
-AI Climate Risk Portfolio Explorer is a browser-based geospatial dashboard for screening physical climate risks across an asset portfolio. It combines climate hazard grids from the Climate Impact Explorer (CIE) with asset locations, spatial analysis, and portfolio summaries to help users compare scenarios, detect hotspots, and explore impact pathways.
+The AI Climate Risk Portfolio Explorer is a browser-based geospatial tool for screening physical climate hazards at asset locations and comparing exposure across a portfolio. Developed by SEI Latin America, the current application focuses on Colombia and combines Climate Impact Explorer (CIE) v2 data, interactive 2D/3D maps, portfolio analysis, and an AI-assisted question-and-report workflow.
 
-The project was developed by SEI Latin America and is designed to support climate-risk screening for industrial and infrastructure portfolios in Colombia and similar geographies.
+> **Screening tool, not a financial-risk model.** The indicators describe climate hazards at roughly 0.5° (~55 km) resolution. They do not estimate financial losses or account for asset vulnerability, value, adaptation, or local site conditions. Do not use the tool alone to make investment or operational decisions.
 
-## Overview
+**Try the deployed explorer:** [ai-climate-risk-portfolio-explorer.org](https://ai-climate-risk-portfolio-explorer.org/)
 
-This repository implements a prototype platform for:
+## What the tool does
 
-- Visualizing climate hazard layers in 2D and 3D maps
-- Comparing scenarios and time horizons (for example, 2030 vs 2050)
-- Evaluating asset-level exposure using nearest-cell matching and portfolio metrics
-- Ranking assets by relative risk within a portfolio
-- Providing a mock AI agent workflow for climate query interpretation and report generation
-- Exporting or sharing climate-risk summaries for decision support
+- Displays climate indicator grids on Leaflet 2D maps and Cesium 3D globes.
+- Compares the included **+1.5°C and +3.0°C global-warming-level** datasets, or selects an RCP scenario and year when using the CIE live API source.
+- Adds assets by entering coordinates or importing CSV, TXT, GeoJSON, or JSON location data. CSV uploads use `name`, `lat`, and `lon` columns.
+- Matches assets to the grid cell containing their coordinates, or the nearest cell when needed; the application marks nearest-cell matches.
+- Summarizes portfolio values and changes, ranks assets, and classifies relative exposure tiers within the selected portfolio.
+- Provides spatial drawing and measurement tools, multi-hazard profiles, printable asset factsheets, Excel/CSV exports, and shareable links.
+- Guides users through a four-step AI workflow: data selection, risk assessment, response/report, and delivery/feedback. When the AI service is reachable, an open-source LLM drafts the response from submitted portfolio context; responses are checked against the data and can be flagged for SEI specialist review. If the service is unavailable, the explorer falls back to a demonstration response.
 
-The project is primarily front-end driven and uses public climate data sources and geospatial libraries in the browser.
+The tool reports **hazard indicators and relative exposure**, not absolute risk thresholds. Relative HIGH/MEDIUM/LOW tiers are calculated within the current portfolio. Hazard percentiles compare an asset's grid cell with Colombian grid cells. Values and comparisons depend on the selected indicator, data source, and scenario.
 
-## Repository structure
+## Data and limitations
 
-```text
-AI-Climate-Explorer/
-├── 0. Old version/                 # Legacy experiments, R scripts, and early demo outputs
-├── 1.0 Architecture/              # System architecture assets and visual documentation
-├── 2.0 docs/                      # Core front-end logic: geovisor, translations, UI behavior
-├── 3.0 Data/                      # Climate data, metadata dictionaries, and source files
-├── 4.0 Concept Note/              # Conceptual design notes and project rationale
-├── LICENSE                        # Project license
-├── README.md                      # Project documentation
-└── .gitignore                    # Git ignore rules
-```
+The `3.0 Data/` directory contains paired CSV grids for two warming levels for indicators including dangerous heat days (`HI-danger`), annual maximum temperature (`TXx`), precipitation extremes (`rx1day`, `rx5day`), consecutive dry days, fire-weather days (`fwixd`), temperature (`tasAdjust`), precipitation (`prAdjust`), water stress (`wsi`), drought (`spei_gamma_12`), labour productivity loss, and river discharge (`dis`). `diccionario_variables.csv` documents indicator names and descriptions. The grid CSVs use columns such as `lat`, `lon`, `value`, `variable`, `tipo`, and `warming_level`.
 
-## System architecture
+The browser app can load the bundled GitHub-hosted warming-level data or request data from the CIE v2 live API. Browser/API availability can vary (including CORS restrictions); the bundled data source is the fallback option. Data are central estimates and do not show the spread across climate models. The grid resolution does not resolve local features such as valleys, coastlines, or urban heat islands. River-flood data and other indicators listed in the dictionary may not be available as app layers just because they are named in the metadata.
 
-The system is organized around a browser-based geospatial application with these key layers:
-
-1. Frontend layer
-   - JavaScript-driven UI with Leaflet (2D) and Cesium (3D)
-   - Climate layer rendering, legends, asset markers, popups, filters, and user controls
-   - Portfolio metrics panel and AI query panel
-
-2. Data ingestion layer
-   - Climate data comes from the Climate Impact Explorer v2 API
-   - A GitHub backup path mirrors the same data for resilience when the live API is unavailable
-   - Local CSV/GeoJSON uploads are supported for custom asset locations
-
-3. Spatial processing layer
-   - Grid cells are parsed from wide CSV or long-form CSV files
-   - Asset coordinates are matched to the nearest grid cell or exact cell if available
-   - Portfolio statistics are computed from these matched values
-
-4. Analysis and presentation layer
-   - Hazard layers are compared by scenario or difference over time
-   - Terciles are computed within the current portfolio to classify assets as LOW/MEDIUM/HIGH risk
-   - User-facing charts and fact sheets summarize exposure and change
-
-5. AI layer (prototype / demo)
-   - The system includes a multi-agent workflow that simulates query parsing, risk assessment, report generation, and delivery
-   - This is not yet connected to a production LLM or backend service, but it does use real map data and portfolio context as the basis for simulated responses
-
-## Data flow
-
-The typical end-to-end flow is:
+## Repository layout
 
 ```text
-User input / asset import
-        ↓
-Asset coordinates + portfolio metadata
-        ↓
-Grid data fetch (CIE API or GitHub backup)
-        ↓
-CSV parsing and spatial indexing
-        ↓
-Nearest-cell / exact-cell extraction
-        ↓
-Portfolio metrics + relative risk tiers
-        ↓
-Map rendering + charts + AI summarization
+.github/                 Issue templates
+0. Old version/          Legacy R analysis and an earlier static dashboard
+1.0 Architecture/        Architecture/workflow animation
+2.0 docs/                Current browser application and administration page
+  admin/index.html       Human-in-the-loop administration prototype
+  index.html             Explorer interface
+  geovisor.js            Map, data, analysis, export, and AI workflow logic
+  geovisor.css           Application styling and themes
+  i18n.js                English, Spanish, and Portuguese translations
+3.0 Data/                Climate-grid CSVs, variable dictionary, and data logs
+4.0 Concept Note/        Project concept note (PDF)
+README.md                Project documentation
 ```
 
-In practice, climate rasters are loaded as lat/lon/value points, indexed into a regular grid, and then queried by asset coordinates. This makes it possible to compute exposure quickly and to compare two scenarios at a portfolio scale.
+### Application and AI flow
 
-## Technology stack
+`2.0 docs/index.html` builds the interface and loads Leaflet, Cesium, Tailwind CSS, and the application scripts from CDNs. `geovisor.js` manages climate sources and scenarios, grid rendering, asset matching and portfolio summaries, spatial tools, exports, and the four-step agent interface; `i18n.js` supplies English, Spanish, and Portuguese UI text. The optional AI service is checked at `https://api.ai-climate-risk-portfolio-explorer.org/health`. When online, the browser sends a run to `/v1/agents/run`; delivery and survey events are posted to the corresponding run endpoints. The service is not part of this repository, and the browser-side workflow has a demonstration fallback.
 
-### Frontend and visualization
-- HTML5
-- CSS / Tailwind-like custom styling within the static UI
-- JavaScript (ES6+)
-- Leaflet for 2D mapping
-- Cesium for 3D globe and terrain visualization
-- ArcGIS and Bing/Esri map providers for basemaps
-- Plot-style mini charts and HTML-based dashboard summaries
+The separate `2.0 docs/admin/index.html` is a prototype review dashboard. It uses Cloudflare Access identity endpoints and browser `localStorage` for its review state and sample data; it is **not** a production database or centralized review system. Deployment must configure Cloudflare Access and the required routes. Do not treat the admin screen's sample records or local browser state as persistent production records.
 
-### Climate data and geospatial processing
-- Climate Impact Explorer (CIE) v2 API
-- Raw CSV climate data in the repository
-- GeoJSON/CSV import capabilities for custom asset datasets
-- Lat/lon grid indexing and nearest-neighbor lookup logic in JavaScript
+## Run locally
 
-### AI / simulation layer
-- JavaScript prompt flow and simulated agent logic
-- Natural-language query parsing for variables and scenarios
-- RAG-style knowledge retrieval simulation using context metadata and indicator documentation
-- Browser-side report generation and delivery workflow mockups
-
-### Data sources and services
-- Climate Analytics / Climate Impact Explorer v2
-- GitHub raw content hosting for climate backup files
-- OpenStreetMap Nominatim for geocoding and map lookup
-- Esri / ArcGIS basemap services
-- Cesium Ion access token for 3D imagery
-
-## Data and climate model context
-
-The repository includes metadata and variable definitions for climate indicators such as:
-
-- HI-danger (dangerous heat days)
-- TXx (annual maximum daily temperature)
-- rx1day / rx5day (precipitation extremes)
-- consecutive_dry_days
-- tasAdjust and prAdjust
-- wsi (water stress index)
-- spei_gamma_12
-- labour-productivity-loss
-- dis (river discharge)
-- fwixd (fire-weather days)
-
-This data is aligned with the Climate Impact Explorer variable dictionary stored in `3.0 Data/diccionario_variables.csv`.
-
-The application supports both:
-
-- live API mode using scenario codes such as `rcp26`, `rcp45`, `rcp85`
-- static backup mode using warming-level CSVs stored in the repository (`+1.5°C`, `+3.0°C`)
-
-## Database and infrastructure
-
-This repository does not currently implement a production PostgreSQL database or cloud deployment stack. The project behaves as a frontend prototype and data-exploration dashboard, with several important implications:
-
-- Climate data is delivered as flat files and CSV payloads
-- The system does not have a persistent application database in the codebase
-- Asset state is kept in browser memory
-- Deployment is intended to be lightweight and static or containerized, rather than fully cloud-native
-
-The project mentions Google Cloud Platform in the broader product vision, but the GitHub repository itself does not implement a complete GCP deployment architecture. The infrastructure is more conceptually planned than production-ready.
-
-## AI / ML pipeline
-
-The platform includes a mock AI pipeline inspired by a retrieval-augmented generation (RAG) design:
-
-1. Query parsing
-   - Natural-language input is analyzed for climate variable, scenario, asset names, and time horizons.
-
-2. Climate data selection
-   - The relevant hazard variable and scenario are chosen dynamically from the map context.
-
-3. Risk assessment
-   - Asset values are validated, ranked, and summarized across scenarios.
-
-4. Retrieval layer
-   - The system simulates a knowledge-base context using indicator documentation and climate-risk guidance.
-
-5. Response generation
-   - A structured answer is produced with ranking logic, asset insights, and a PDF-style summary report.
-
-6. Delivery and feedback
-   - The app simulates email delivery, PDF generation, and post-response satisfaction flow.
-
-This is a demonstration workflow, not a production-grade AI system. It is useful for product exploration and prototype validation, but it does not yet connect to a real LLM backend, vector database, or model serving infrastructure.
-
-## Existing documentation and project assets
-
-The repository contains supporting documentation and concept artifacts:
-
-- `1.0 Architecture/` — architecture visuals and the animated system overview
-- `4.0 Concept Note/` — conceptual note describing project logic and rationale
-- `2.0 docs/` — app logic, translations, and UI workflows
-- `3.0 Data/` — climate metadata and downloaded data files
-
-The repository does not currently include a full security policy, contribution guide, or code of conduct at the root level, although the project structure suggests an active prototype and research environment.
-
-## Code quality assessment
-
-The codebase shows a working prototype with several strengths:
-
-- Clear separation of roles between data parsing, map rendering, and asset analysis
-- Good modularization in JavaScript functions
-- Support for multiple map modes and UI toggles
-- Real climate data integration with fallback logic
-- Good user experience for interactive exploration and demo workflows
-
-## Security considerations
-
-The repository demonstrates a demo-level app and is not a hardened production application. Security concerns include:
-
-- Hardcoded credentials or access tokens in front-end code
-- Browser-executed data loading without robust validation in production deployments
-- Use of open geographic basemap and geocoding APIs without governance constraints
-- Absence of secure backend authentication and authorization patterns
-- Need for strict input validation when users upload CSV or GeoJSON files
-
-## Getting started
-
-Because the project is mostly a front-end browser application, the quickest way to explore it is to serve the repository locally with a static web server.
-
-Example using Python:
+There is no package manifest, build step, or automated test command in this repository. The current explorer is a static front-end; Python 3 is sufficient to serve it locally:
 
 ```bash
-cd AI-Climate-Explorer
+git clone https://github.com/sei-latam/AI-Climate-Risk-Portfolio-Explorer.git
+cd AI-Climate-Risk-Portfolio-Explorer/2.0\ docs
 python -m http.server 8000
 ```
 
-Then open:
+Open <http://localhost:8000/>. A local static server lets you explore the browser UI; live CIE requests, the optional AI service, and Cloudflare Access administration depend on their external services and deployment configuration. The administration page is at `/admin/` in the configured deployment and requires an authorized SEI account.
 
-```text
-http://localhost:8000/
-```
+## Development notes
 
-If the entry page is stored in a nested folder or generated documentation layout, follow the repository’s main app file structure and open the appropriate page from the `2.0 docs` or related directories.
+- The current app is plain HTML, CSS, and JavaScript; there is no `package.json` or build/test script.
+- Most front-end libraries are loaded from CDNs, so internet access is needed for those libraries and online map/data services.
+- The files under `0. Old version/` are historical examples, not the current app. The R script contains machine-specific working-directory paths and requires its R packages and external data services; it is not a ready-to-run setup for a fresh clone.
+- For contribution guidance, see [CONTRIBUTING.md](CONTRIBUTING.md). The project uses the [GNU GPL v3](LICENSE).
 
-## License
+## Credits and references
 
-This project is distributed under the LICENSE file included in the repository.
-
-## Summary
-
-AI Climate Risk Portfolio Explorer is a useful prototype for geospatial climate-risk screening, combining climate data, scenario comparisons, and portfolio-level analytics in a browser-based experience. It demonstrates an encouraging path from raw geospatial data to a decision-support application, but still needs stronger production architecture, documentation, security controls, and backend services before being considered a production-grade climate intelligence platform.
-
----
-
-If you want, I can also produce:
-
-- a shorter, more polished version for GitHub marketing
-- a more technical README for engineers
-- a Spanish version aligned with the original repository tone
-- a README tailored to a public release or academic presentation
+Climate indicator data are attributed in the application to Climate Analytics' [Climate Impact Explorer v2](https://climate-impact-explorer.climateanalytics.org/). The explorer is developed by [SEI Latin America](https://www.sei.org/centres/latinoamerica/). See the in-app **About the data** panel for methodology, indicator definitions, and citation details.
