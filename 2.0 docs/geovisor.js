@@ -2521,14 +2521,42 @@ function showEmailForm(btn) {
   scrollChat();
 }
 
-function deliverByEmail() {
+async function deliverByEmail() {
   const email = document.getElementById('agent-email')?.value.trim();
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { showToast(t('Please enter a valid email address.'), 'error'); return; }
   saveHitlRecord({ delivery: { channel: 'email', to: maskEmail(email) } });
-  postAce(`/v1/runs/${agentState.run?.api?.run_id}/delivery`, { channel: 'email', to: email });
   const area = document.getElementById('agent-delivery-area');
-  area.innerHTML = `<p class="text-emerald-400 text-[10px]"><i class="fa-solid fa-circle-check"></i> ${t('Report {f} queued for {e}.', { f: escapeHtml(reportFileName()), e: escapeHtml(email) })}</p>
-    <p class="text-slate-500 text-[9px]">${t('Demonstration: no email is actually sent.')}</p>`;
+  const runId = agentState.run?.api?.run_id;
+  // Sin servidor de IA (modo demostración): no se envía nada
+  if (!aceApi.online || !runId) {
+    area.innerHTML = `<p class="text-emerald-400 text-[10px]"><i class="fa-solid fa-circle-check"></i> ${t('Report {f} queued for {e}.', { f: escapeHtml(reportFileName()), e: escapeHtml(email) })}</p>
+      <p class="text-slate-500 text-[9px]">${t('Demonstration: no email is actually sent.')}</p>`;
+    askSatisfactionSurvey();
+    return;
+  }
+  area.innerHTML = `<p class="text-slate-400 text-[10px]"><i class="fa-solid fa-spinner fa-spin"></i> ${t('Sending the report to {e}…', { e: escapeHtml(email) })}</p>`;
+  let ok = false, reason = '';
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 25000);
+    const r = await fetch(`${ACE_API}/v1/runs/${encodeURIComponent(runId)}/delivery`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channel: 'email', to: email }), signal: ctrl.signal
+    });
+    clearTimeout(timer);
+    const j = await r.json().catch(() => ({}));
+    ok = r.ok && j.sent === true;
+    reason = j.reason || j.detail || (r.status === 429 ? 'run_limit' : '');
+  } catch { ok = false; }
+  if (ok) {
+    area.innerHTML = `<p class="text-emerald-400 text-[10px]"><i class="fa-solid fa-envelope-circle-check"></i> ${t('Report sent to {e}. Check your inbox (and spam folder).', { e: escapeHtml(email) })}</p>`;
+  } else {
+    const msg = reason === 'run_limit' || reason === 'daily_limit'
+      ? t('The email limit has been reached. Please download the report instead.')
+      : t('The email could not be sent right now. Please download the report instead.');
+    area.innerHTML = `<p class="text-amber-300 text-[10px]"><i class="fa-solid fa-triangle-exclamation"></i> ${msg}</p>
+      <button onclick="deliverByDownload()" class="mt-1 px-2.5 py-1 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-[10px] font-bold"><i class="fa-solid fa-download"></i> ${t('Download')}</button>`;
+  }
   askSatisfactionSurvey();
 }
 
